@@ -13,18 +13,43 @@
 // ***************************************************************************
 @lazyglobal off.
 
+// ====== Vector Math ======
+
 // Rotate a vector along another, using Rodrigues' rotation formula
 // https://en.wikipedia.org/wiki/Rodrigues'_rotation_formula
 function vrot {
-  parameter parVecVictim.
-  parameter parVecRef.
-  parameter parAngle.
+  parameter parVecVictim. // rotate this
+  parameter parVecRef. // ... with this as rotation axis
+  parameter parAngle. // ... by this angle
 
   return parVecVictim * cos(parAngle)
     + vcrs(parVecRef:normalized, parVecVictim) * sin(parAngle)
     + parVecRef:normalized * vdot(parVecRef:normalized, parVecVictim) * (1 - cos(parAngle))
     .
 }
+
+// Rotate a vector toward another
+// TODO test this one
+function vrott {
+  parameter parVecVictim. // rotate this
+  parameter parVecToward. // ... toward this one
+  parameter parAngle. // ... by this angle
+
+  local vecAxis is vcrs(parVecVictim, parVecToward).
+  return vrot(parVecVictim, vecAxis, parAngle).
+}
+
+// Projection of a vector onto another vector
+// TODO test this one
+function vprj {
+  parameter parVecVictim. // project this
+  parameter parVecDir. // ... onto this direction
+
+  local vecUnitDir is parVecDir:normalized.
+  return vecUnitDir * vdot(parVecVictim, vecUnitDir).
+}
+
+// ====== Special Vectors ======
 
 // Get the universal reference vector (First Point of Skybox) by ugly reverse engineering
 // Should not be needed once this get released:
