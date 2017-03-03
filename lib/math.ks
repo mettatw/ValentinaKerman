@@ -48,3 +48,20 @@ function vprj {
   local vecUnitDir is parVecDir:normalized.
   return vecUnitDir * vdot(parVecVictim, vecUnitDir).
 }
+
+// Normalize an angle to [0, 360)
+function angNorm {
+  parameter parAng.
+  if parAng < 0 {
+    return mod(parAng, -360)+360.
+  } else if parAng >= 360 {
+    return mod(parAng, 360).
+  }
+  return parAng.
+}
+
+// Get opposite direction, normalized angle
+function angOppo {
+  parameter parAng.
+  return angNorm(parAng + 180).
+}
