@@ -47,29 +47,31 @@ function planChangeInc {
 // ====== Based on other orbit ======
 
 function planMatchInc {
-  parameter parOrbitTarget.
+  parameter parKep.
 
-  local orbitShip is extractOrbit(ship:orbit).
+  local kepShip is kepKSP(ship:orbit).
   local taNow is ship:orbit:trueanomaly.
 
-  local relInclination is getInclination(orbitShip, parOrbitTarget).
-  local posAN is getAscPos(orbitShip, parOrbitTarget).
-  local posDN is getDescPos(orbitShip, parOrbitTarget).
+  local relInc is kepShip[".relInc"](parKep).
+  local taAN is kepShip[".taAtRelAsc"](parKep).
+  local posAN is kepShip[".posOfTA"](taAN).
+  local posDN is -posAN.
 
-  local velNow is getVelFromTA(orbitShip, taNow).
+  local velNow is kepShip[".velOfTA"](taNow).
   if vdot(velNow, posAN) > 0 { // next node is AN
-    planChangeInc(getTAFromPos(orbitShip, posAN), relInclination).
+    planChangeInc(taAN, -relInc).
   } else {
-    planChangeInc(getTAFromPos(orbitShip, posDN), -relInclination).
+    planChangeInc(angNorm(taAN+180), relInc).
   }
 }
 
 function planMatchAltitudeSpecial {
-  parameter parOrbitTarget.
+  parameter parKep.
   parameter parOrient. // "DN", "AN", "AN/DN", "Apo", "Peri"
   parameter parAltitude is -1. // not specified = compute from target orbit
 
-  local orbitShip is extractOrbit(ship:orbit).
+  local kepShip is kepKSP(ship:orbit).
+  local taNow is ship:orbit:trueanomaly.
 
   local taTarget is 0.
   if parOrient = "Apo" {
@@ -78,11 +80,12 @@ function planMatchAltitudeSpecial {
     set taTarget to 0.
   } else if parOrient = "AN/DN" or parOrient = "AN" or parOrient = "DN" {
 
+    local taOurAN is kepShip[".taAtRelAsc"](parKep).
+    local taOurDN is angNorm(taOurAN+180).
+
     if parOrient = "AN/DN" {
-      local posOurAN is getAscPos(orbitShip, parOrbitTarget).
-      local taNow is ship:orbit:trueanomaly.
-      local velNow is getVelFromTA(orbitShip, taNow).
-      if vdot(velNow, posOurAN) > 0 { // our next node is AN, push THEIR AN (which is on opposite side)
+      local velNow is kepShip[".velOfTA"](taNow).
+      if vdot(velNow, kepShip[".posOfTA"](taOurAN)) > 0 { // our next node is AN, push THEIR AN (which is on opposite side)
         set parOrient to "AN".
       } else {
         set parOrient to "DN".
@@ -90,32 +93,29 @@ function planMatchAltitudeSpecial {
     }
 
     if parOrient = "AN" {
-      local posTheirAN is getAscPos(parOrbitTarget, orbitShip).
-      set taTarget to getTAFromPos(parOrbitTarget, posTheirAN).
+      set taTarget to parKep[".taAtRelAsc"](kepShip).
     } else if parOrient = "DN" {
-      local posTheirDN is getDescPos(parOrbitTarget, orbitShip).
-      set taTarget to getTAFromPos(parOrbitTarget, posTheirDN).
+      set taTarget to angNorm(180+parKep[".taAtRelAsc"](kepShip)).
     }
 
   } else {
     print "Error planMatchAltitudeSpecial: parOrient " + parOrient + " seems incorrect.".
     return.
   }
-  planMatchAltitude(parOrbitTarget, taTarget, parAltitude).
+  planMatchAltitude(parKep, taTarget, parAltitude).
 }
 
 function planMatchAltitude {
-  parameter parOrbitTarget.
+  parameter parKep.
   parameter parTATarget.
   parameter parAltitude is -1. // not specified = compute from target orbit
 
-  local orbitShip is extractOrbit(ship:orbit).
+  local kepShip is kepKSP(ship:orbit).
   local taNow is ship:orbit:trueanomaly.
 
   if parAltitude = -1 {
-    // minus body radius
-    set parAltitude to getRadiusFromTA(parOrbitTarget, parTATarget) - parOrbitTarget[0]:radius.
+    set parAltitude to parKep[".altOfTA"](parTATarget).
   }
 
-  planChangeAltitude(convertTA(180-parTATarget, parOrbitTarget, orbitShip), parAltitude).
+  planChangeAltitude(parKep[".convTA"](kepShip, 180-parTATarget), parAltitude).
 }
