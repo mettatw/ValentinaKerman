@@ -75,7 +75,7 @@ function runNode {
 
   local currentThrottle is 0.
   lock throttle to currentThrottle.
-  until vang(dv0, parNode:deltav) > 5 {
+  until vang(dv0, parNode:deltav) > 20 {
     local aNow is ship:availablethrust/ship:mass.
 
     // This is copied from KOS tutorial
