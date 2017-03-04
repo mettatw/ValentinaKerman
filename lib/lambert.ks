@@ -73,7 +73,7 @@ function solveLambertLB {
   local x is x0.
   local xp is x0.
   local Tx is 99999.
-  from {local itr is 0.} until abs(Tx) < 1e-5 step {set itr to itr+1.} do {
+  from {local itr is 1.} until abs(Tx) < 1e-5 step {set itr to itr+1.} do {
     local lb3 is __LancasterBlanchard(x, q, parM).
     local T1 is lb3[0].
     local T2 is lb3[1].
@@ -87,10 +87,11 @@ function solveLambertLB {
     set xp to x.
     // main Halley
     set x to x - 2*Tx*T2 / (2*T2^2 - Tx*T3).
-    print itr + ": " + Tx.
+    //print itr + ": " + Tx.
+
+    // escape clause??
+    if mod(itr, 7) = 0 { set x to (xp+x)/2. }.
   }
-        // % escape clause??
-        // if mod(iterations, 7), x = (xp+x)/2. end        
 
   // constants required for this calculation
   local gamma is sqrt(parMu*s/2).
