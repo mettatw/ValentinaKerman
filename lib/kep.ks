@@ -250,25 +250,8 @@ function kepModChangeInc { // (kep, ta, d-inc)
   parameter parTA.
   parameter parDeltaInc.
 
-  local orbitShip is extractOrbit(ship:orbit).
-  local posAN is getPosFromTA(orbitShip, parTA).
-  // reference vectors: prograde, normal and radial
-  local velBefore is getVelFromTA(orbitShip, parTA).
-  local vecNormal is -getOrbitPlane(orbitShip). // defined with right-hand rule as opposed to left-hand rule as in kos
-  local vecRadial is vcrs(velBefore, vecNormal).
+  local velBefore is parKep[".velOfTA"](parTA).
+  local velAfter is vrot(velBefore, parKep[".posOfTA"](parTA), -parDeltaInc).
 
-  local velAfter is rotateVector(velBefore, posAN, parDeltaInc).
-
-  local deltaVel is velAfter - velBefore.
-
-  local altBurn is parKep[".altOfTA"](parTA).
-  if (parAlt > altBurn) { // current point will be new periapsis
-    return kepAP(parKep["body"], parAlt, altBurn, parKep["inc"], parKep["lan"],
-      angNorm(parKep["aop"] + parTA) // new aop
-    ).
-  } else {
-    return kepAP(parKep["body"], altBurn, parAlt, parKep["inc"], parKep["lan"],
-      angNorm(parKep["aop"] + parTA + 180) // new aop
-    ).
-  }
+  return kepState(parKep["body"], parKep[".posOfTA"](parTA), velAfter).
 }
