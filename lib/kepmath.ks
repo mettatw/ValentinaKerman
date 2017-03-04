@@ -145,32 +145,26 @@ function getOrbitTAFromMA { // (ecc, ma)
   parameter parEcc.
   parameter parMA.
 
-  // Input value normalization
-  if parMA >= 360 { set parMA to mod(parMA, 360). }.
-  if parMA < 0 { set parMA to mod(parMA, 360) + 360. }.
-
+  // Input value normalization & known answers
+  set parMA to angNorm(parMA).
   if parMA = 0 { return 0. }
   if parMA = 180 { return 180. }
 
-  local currentTA is parMA. // very bad initial guess
-  local correctionTA is 0.
-  local pidForTA is pidloop(1, 0, 0, -10, 10).
-  set pidForTA:setpoint to parMA.
+  local radMA is constant:degtorad * parMA.
+  local currentEA is radMA. // very bad initial guess
+  local correctionEA is 0.
 
-  // Cheating here, use kos pidloop to solve TA from MA
-  from {local itr is 0.} until itr > 50 step {set itr to itr+1.} do {
-    set correctionTA to pidForTA:update(itr, getOrbitMAFromTA(parEcc, currentTA)).
-    set currentTA to currentTA + correctionTA.
-    if currentTA < 0 {
-      set currentTA to currentTA+360.
-    }
-    if currentTA >= 360 {
-      set currentTA to mod(currentTA,360).
-    }
-    if abs(correctionTA) <= 1e-3 { break. }
-    set pidForTA:kp to pidForTA:kp * 0.98. // exponential decay
+  // Halley's method
+  from {local itr is 0.} until itr > 20 step {set itr to itr+1.} do {
+    local f is currentEA - parEcc * sin(constant:radtodeg*currentEA) - radMA.
+    local ff is 1 - parEcc * cos(constant:radtodeg*currentEA).
+    local fff is parEcc * sin(constant:radtodeg*currentEA).
+    set correctionEA to 2*f*ff/(2*ff^2 - f*fff).
+    if abs(correctionEA) < 1e-6 { break. }.
+    set currentEA to currentEA - correctionEA.
   }
-  return currentTA.
+  set currentEA to constant:radtodeg * currentEA.
+  return 2*arctan2(sqrt(1+parEcc)*sin(currentEA/2), sqrt(1-parEcc)*cos(currentEA/2)).
 }
 
 
