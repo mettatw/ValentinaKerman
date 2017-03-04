@@ -29,7 +29,7 @@ runoncepath("lib/kepmath").
 
 // Basic constructor: input body/ap/pe/inc/lan/aop
 // AP/PE in the input here is altitude above sea level, not radius as used in the lexicon
-function kepAP {
+function kepAP { // (body, ap, pe, inc, lan, aop)
   parameter parBody.
   parameter parAp.
   parameter parPe.
@@ -39,20 +39,14 @@ function kepAP {
 
   local apReal is parAp + parBody:radius.
   local peReal is parPe + parBody:radius.
-  local sma is (parAp + parPe)/2 + parBody:radius.
 
   local rslt is lexicon("body", parBody, "inc", parInc, "lan", parLan, "aop", parAop,
-    "ap", apReal,
-    "pe", peReal,
-    "sma", sma,
-    "ecc", 1 - (2 / (1 + apReal / peReal)),
-    "period", 2 * constant:pi * sqrt(sma^3 / parBody:mu)
-  ).
+    "ap", apReal, "pe", peReal).
   return __kepAddSuffix(rslt).
 }
 
 // Get the values from an actual orbit object
-function kepKSP {
+function kepKSP { // (orbit, patch)
   parameter parOrbit.
   parameter parPatch is 0. // -1 for last patch
 
@@ -89,6 +83,17 @@ function __kepAddSuffix {
   set kepRaw["brad"] to kepRaw["body"]:radius.
   set kepRaw["arad"] to kepRaw["body"]:radius + kepRaw["body"]:atm:height.
   set kepRaw["mu"] to kepRaw["body"]:mu.
+
+  // missing elements
+  if not kepRaw:haskey("ecc") and kepRaw:haskey("ap") and kepRaw:haskey("pe") {
+    set kepRaw["ecc"] to 1 - (2 / (1 + kepRaw["ap"] / kepRaw["pe"])).
+  }
+  if not kepRaw:haskey("sma") and kepRaw:haskey("ap") and kepRaw:haskey("pe") {
+    set kepRaw["sma"] to (kepRaw["ap"] + kepRaw["pe"])/2.
+  }
+  if not kepRaw:haskey("period") and kepRaw:haskey("sma") {
+    set kepRaw["period"] to 2 * constant:pi * sqrt(kepRaw["sma"]^3 / kepRaw["mu"]).
+  }
 
   // coordinates
   set kepRaw[".vecPeri"] to {
@@ -186,4 +191,84 @@ function __kepAddSuffix {
   }.
 
   return kepRaw.
+}
+
+// ====== Advanced Construction of Orbit ======
+
+// Construct from a pair of state vector
+// https://downloads.rene-schwarz.com/download/M002-Cartesian_State_Vectors_to_Keplerian_Orbit_Elements.pdf
+function kepState { // (body, pos, vel)
+  parameter parBody.
+  parameter parPos.
+  parameter parVel.
+
+  local sam is vcrs(parPos, parVel). // specific angular momentum
+  local vecEcc is vcrs(parVel, sam)/parBody:mu - parPos:normalized. // eccentricity vector
+  local ecc is vecEcc:mag.
+
+  local vecAN is vcrs(sam, V(0,-1,0)). // ascending node
+  local inc is vang(V(0,-1,0), sam). // inclination, will only be positive here
+  local lan is vang(solarprimevector, vecAN). // longitude of ascending node
+  if vang(vrot(solarprimevector, V(0,-1,0), lan), vecAN) > 0.5 {
+    set lan to 360-lan.
+  }
+  local aop is vang(vecEcc, vecAN). // argument of periapsis
+  if vang(vrot(vecAN, sam, aop), vecEcc) > 0.5 {
+    set aop to 360-aop.
+  }
+
+  local soe is parVel:mag^2/2 - parBody:mu/parPos:mag.
+  local sma is -parBody:mu / 2 / soe.
+  local ap is sma * (1+ecc) - parBody:radius.
+  local pe is sma * (1-ecc) - parBody:radius.
+  return kepAP(parBody, ap, pe, inc, lan, aop).
+}
+
+// ====== Modify the Kep Object ======
+
+// Make an orbit with a TA as one *apsis, and some altitude as another
+function kepModChangeAlt { // (kep, ta, alt)
+  parameter parKep.
+  parameter parTA.
+  parameter parAlt.
+
+  local altBurn is parKep[".altOfTA"](parTA).
+  if (parAlt > altBurn) { // current point will be new periapsis
+    return kepAP(parKep["body"], parAlt, altBurn, parKep["inc"], parKep["lan"],
+      angNorm(parKep["aop"] + parTA) // new aop
+    ).
+  } else {
+    return kepAP(parKep["body"], altBurn, parAlt, parKep["inc"], parKep["lan"],
+      angNorm(parKep["aop"] + parTA + 180) // new aop
+    ).
+  }
+}
+
+// Make an orbit changing inclination at TA
+function kepModChangeInc { // (kep, ta, d-inc)
+  parameter parKep.
+  parameter parTA.
+  parameter parDeltaInc.
+
+  local orbitShip is extractOrbit(ship:orbit).
+  local posAN is getPosFromTA(orbitShip, parTA).
+  // reference vectors: prograde, normal and radial
+  local velBefore is getVelFromTA(orbitShip, parTA).
+  local vecNormal is -getOrbitPlane(orbitShip). // defined with right-hand rule as opposed to left-hand rule as in kos
+  local vecRadial is vcrs(velBefore, vecNormal).
+
+  local velAfter is rotateVector(velBefore, posAN, parDeltaInc).
+
+  local deltaVel is velAfter - velBefore.
+
+  local altBurn is parKep[".altOfTA"](parTA).
+  if (parAlt > altBurn) { // current point will be new periapsis
+    return kepAP(parKep["body"], parAlt, altBurn, parKep["inc"], parKep["lan"],
+      angNorm(parKep["aop"] + parTA) // new aop
+    ).
+  } else {
+    return kepAP(parKep["body"], altBurn, parAlt, parKep["inc"], parKep["lan"],
+      angNorm(parKep["aop"] + parTA + 180) // new aop
+    ).
+  }
 }
