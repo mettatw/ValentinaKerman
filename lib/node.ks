@@ -36,7 +36,7 @@ function combineNode {
   add nd1.
 }
 
-function makeNode {
+function makeNode { // (ta, radialout, normal, prograde, [round=0])
   parameter parTA.
   parameter parRadialOut.
   parameter parNormal.
@@ -49,6 +49,25 @@ function makeNode {
   local timeToBurn is time:seconds + kepShip[".timeThruTA"](taNow, parTA) + parRound*kepShip["period"].
 
   return node(timeToBurn, parRadialOut, parNormal, parPrograde).
+}
+
+function makeNodeFromVec { // (ta, vec, [round=0])
+  parameter parTA.
+  parameter parVec.
+  parameter parRound is 0.
+
+  // Find the time to burn point
+  local kepShip is kepKSP(ship:orbit).
+  local taNow is ship:orbit:trueanomaly.
+  local timeToBurn is time:seconds + kepShip[".timeThruTA"](taNow, parTA) + parRound*kepShip["period"].
+
+  local axisPrograde is kepShip[".velOfTA"](parTA):normalized.
+  // normal is defined by right-hand rule, as opposed to ksp's left-hand
+  local axisNormal is -kepShip[".vecPlane"]():normalized.
+  // we want radial-out, this cross will give us radial-in
+  local axisRadialOut is -vcrs(axisPrograde, axisNormal).
+
+  return node(timeToBurn, vdot(parVec, axisRadialOut), vdot(parVec, axisNormal), vdot(parVec, axisPrograde)).
 }
 
 function addNode {
