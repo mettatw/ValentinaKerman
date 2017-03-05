@@ -1,3 +1,5 @@
+// Boot script to Just open a terminal
+@lazyglobal off.
 
 CORE:PART:GETMODULE("kOSProcessor"):DOEVENT("Open Terminal").
 set Terminal:HEIGHT to 46.

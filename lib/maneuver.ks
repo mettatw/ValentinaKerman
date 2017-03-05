@@ -18,7 +18,7 @@ runoncepath("lib/node").
 
 // Plan a maneuver to change altitude at specific true anomaly
 // This will treat that point as one *apsis, and given altitude as another
-function planChangeAltitude {
+function planChangeAltitude { // (ta, alt)
   parameter parTA. // True anomaly at burn point, 0 for periapsis
   parameter parAlt.
 
@@ -31,7 +31,7 @@ function planChangeAltitude {
   addNode(makeNodeFromVec(parTA, velDelta)).
 }
 
-function planChangeInc {
+function planChangeInc { // (ta, dinc)
   parameter parTA. // True anomaly at burn point, 0 for periapsis
   parameter parDeltaInc.
 
@@ -46,7 +46,7 @@ function planChangeInc {
 
 // ====== Based on other orbit ======
 
-function planMatchInc {
+function planMatchInc { // (kep)
   parameter parKep.
 
   local kepShip is kepKSP(ship:orbit).
@@ -65,7 +65,7 @@ function planMatchInc {
   }
 }
 
-function planMatchAltitudeSpecial {
+function planMatchAltitudeSpecial { // {kep, orient, [alt=-1])
   parameter parKep.
   parameter parOrient. // "DN", "AN", "AN/DN", "Apo", "Peri"
   parameter parAltitude is -1. // not specified = compute from target orbit
@@ -105,7 +105,7 @@ function planMatchAltitudeSpecial {
   planMatchAltitude(parKep, taTarget, parAltitude).
 }
 
-function planMatchAltitude {
+function planMatchAltitude { // (kep, ta, [alt=-1])
   parameter parKep.
   parameter parTATarget.
   parameter parAltitude is -1. // not specified = compute from target orbit
