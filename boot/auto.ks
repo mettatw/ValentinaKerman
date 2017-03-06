@@ -17,4 +17,5 @@ if not exists("1:/sync") {
   run sync.
 }
 
+wait 5.
 run go.
