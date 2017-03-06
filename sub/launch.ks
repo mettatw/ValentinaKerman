@@ -10,22 +10,20 @@ function doLaunchAndGravityTurn {
 
   // Speed to start the initial turn
   local spdTurnBegin is 2.
-  if body:atm:exists {
-    // heuristic, may not work on non-kerbin...
-    set spdTurnBegin to body:atm:sealevelpressure / 3.
-  }
 
   // Altitude for 45-degree turn
   local altAt45 is parHeight / 4.
-  if body:atm:exists {
-    // heuristic, may not work on some planet...
-    set altAt45 to body:atm:sealevelpressure * 100.
-  }
+  local presAt45 is -1. // for atmosphere only
 
-  local altAt0 is parHeight / 2.
+  local altAt0 is parHeight / 3.
+  local presAt0 is -1. // for atmosphere only
+
   if body:atm:exists {
-    // heuristic, may not work on some planet...
-    set altAt0 to body:atm:height*0.65.
+    // arbitrary chosen, may not work somewhere...
+    set spdTurnBegin to body:atm:sealevelpressure / 4.
+    set presAt45 to body:atm:sealevelpressure / 5.
+    set presAt0 to body:atm:sealevelpressure / 2500.
+    ship:sensors:pres. // refuse to launch if no pressure sensor and inside atmosphere
   }
 
   function findDeltaETA {
@@ -43,10 +41,11 @@ function doLaunchAndGravityTurn {
 
   // Variables used in main control loop
   local altTurnBegin is -1.
+  local presTurnBegin is -1.
   local ourSteer is headingUp(0, 90).
   lock steering to ourSteer.
   // Throttle control, setpoint is dETA=0, output is dScaleThrottle
-  local pidThrottle is pidLoop(0.05, 0, 0.01, -1, 1).
+  local pidThrottle is pidLoop(0.1, 0, 0.01, -1, 1).
   set pidThrottle:setpoint to 0.
   // Pitch control, setpoint is dETA=0, output is dPitch
   local pidInvPitch is pidLoop(0.3, 0, 0.05, -10, 10).
@@ -56,15 +55,22 @@ function doLaunchAndGravityTurn {
   local runMode is 1.
   until runMode = 0 {
 
+    // shortcut, if already achieved, just end
+    if ship:orbit:apoapsis >= parHeight {
+      set runMode to 4.
+    }
+
     // 1: before gravity turn
     if runMode = 1 {
       if ship:verticalspeed >= spdTurnBegin {
         print "Start turn at alt " + round(ship:altitude/1000,2) + "km".
         set altTurnBegin to ship:altitude.
+        if body:atm:exists {
+          set presTurnBegin to ship:sensors:pres.
+        }
         set runMode to 2.
       }
     }
-
 
     // Common variables for phase 2 and 3
     local angleBaseline is 90. // What angle to add/sub deltas from. This is the deviation from up vector
@@ -74,25 +80,38 @@ function doLaunchAndGravityTurn {
 
     // 2: turn to 45 degree before specified altitude
     if runMode = 2 {
-      if ship:altitude >= altAt45 {
+      if ship:altitude >= altAt45 or (body:atm:exists and ship:sensors:pres <= presAt45) {
         print "45-degree at alt " + round(ship:altitude/1000,2) + "km".
         set runMode to 3.
       } else {
-        set angleBaseline to 45*(ship:altitude - altTurnBegin)/(altAt45 - altTurnBegin).
         set minThrottle to 0.5.
         set maxAngle to 45.
-        set dAngleMultiplier to max(0, (ship:altitude - altTurnBegin)/(altAt45 - altTurnBegin)-0.25).
+        if body:atm:exists {
+          // should be near linear at this range, no worries
+          set angleBaseline to 45*(ship:sensors:pres - presTurnBegin)/(presAt45 - presTurnBegin).
+          set dAngleMultiplier to max(0, (ship:sensors:pres - presTurnBegin)/(presAt45 - presTurnBegin)-0.25).
+        } else {
+          set angleBaseline to 45*(ship:altitude - altTurnBegin)/(altAt45 - altTurnBegin).
+          set dAngleMultiplier to max(0, (ship:altitude - altTurnBegin)/(altAt45 - altTurnBegin)-0.25).
+        }
       }
     }
 
     // 3: turn to 0 degree before specified altitude
     if runMode = 3 {
-      if ship:altitude >= altAt0 {
+      if ship:altitude >= altAt0 or (body:atm:exists and ship:sensors:pres <= presAt0) {
         print "0-degree at alt " + round(ship:altitude/1000,2) + "km".
         set runMode to 4.
       } else {
-        set angleBaseline to 45 + 45*(ship:altitude - altAt45)/(altAt0 - altAt45).
-        set minThrottle to 0.4.
+        if body:atm:exists {
+          // Weird exponential function for scaling angle to pressure
+          set angleBaseline to 45 + 43* // when in atmo, don't go fully horizontal, for extra safety
+            (constant:e^(30*(ship:sensors:pres-presAt45)/(presAt0-presAt45))-1)/(constant:e^30-1)
+          .
+        } else {
+          set angleBaseline to 45 + 45*(ship:altitude - altAt45)/(altAt0 - altAt45).
+        }
+        set minThrottle to 0.2.
       }
     }
 
@@ -103,7 +122,7 @@ function doLaunchAndGravityTurn {
         set runMode to 0.
       } else {
         set angleBaseline to 90.
-        set minThrottle to 0.3.
+        set minThrottle to 0.05.
       }
 
     } // end runMode branch
@@ -125,7 +144,7 @@ function doLaunchAndGravityTurn {
       // Throttle control
       if twrMax > 0 {
         local scaleThrottle is pidThrottle:update(time:seconds, dETA)/2+0.5. // normalize to 0~1
-        set ship:control:pilotmainthrottle to (1.5/twrMax) + scaleThrottle*(twrMax-1.5)/twrMax.
+        set ship:control:pilotmainthrottle to (1/twrMax) + scaleThrottle*(twrMax-1)/twrMax.
         set ship:control:pilotmainthrottle to max(minThrottle, ship:control:pilotmainthrottle).
       }
 
@@ -143,6 +162,7 @@ function doLaunchAndGravityTurn {
       set angleSteer to min(maxAngle, angleSteer).
       set angleSteer to max(0, angleSteer).
       set ourSteer to headingUp(parHeading, 90 - angleSteer).
+
     }
 
     wait 0.01.
@@ -158,7 +178,7 @@ function doLaunchAndGravityTurn {
   set kuniverse:timewarp:warp to 3.
 
   // Adjusting burns
-  lock throttle to min(1, max(0, parHeight - ship:orbit:apoapsis + 200)/5000). // full throttle for 4.8km error
+  lock throttle to min(1, max(0, parHeight - ship:orbit:apoapsis)/5000). // full throttle for 5km error
 
   wait until ship:altitude > body:atm:height.
   unlock throttle.
