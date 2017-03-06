@@ -26,3 +26,36 @@ function mainLoopRoot {
     set ship:rootpart:tag to (ship:rootpart:tag:tonumber + 1):tostring.
   }
 }
+
+function addRMStdLaunch { // (lex, num, km, azimuth)
+  parameter parLexProgram.
+  parameter parStartNum.
+  parameter parAltitudeInKm.
+  parameter parAzimuth is 90.
+
+  set parLexProgram[parStartNum] to list("Pre-launch countdown", {
+    print "Ready to launch T-15".
+    from {local i is 15.} until i = 0 step {set i to i-1.} do {
+      if i<=5 or i=10 { print i. }.
+      wait 1.
+    }
+  }).
+
+  set parLexProgram[parStartNum+10] to list("Launch", {
+    doLaunchAndGravityTurn(parAltitudeInKm*1000, parAzimuth).
+  }).
+
+}
+
+function addRMStdManu { // (lex, num, desc, maneuver-method, plan-func)
+  parameter parLexProgram.
+  parameter parStartNum.
+  parameter parDesc.
+  parameter parMethod. // 0=wait, 1=warp
+  parameter parFunc.
+
+  set parLexProgram[parStartNum] to list("Plan " + parDesc, parFunc).
+  set parLexProgram[parStartNum+10] to list("Exec " + parDesc, {
+    runNode(parMethod).
+  }).
+}
