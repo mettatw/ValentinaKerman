@@ -8,6 +8,12 @@ function doLaunchAndGravityTurn {
   parameter parHeight. // in meter
   parameter parHeading is 90.
 
+  // Check stupid parameters
+  if parHeight < body:atm:height {
+    print "Error: height " + parHeight + " is lower than atmosphere top layer".
+    print 1/0.
+  }
+
   // Speed to start the initial turn
   local spdTurnBegin is 2.
 
@@ -105,6 +111,7 @@ function doLaunchAndGravityTurn {
       } else {
         if body:atm:exists {
           // Weird exponential function for scaling angle to pressure
+          set maxAngle to 88.
           set angleBaseline to 45 + 43* // when in atmo, don't go fully horizontal, for extra safety
             (constant:e^(30*(ship:sensors:pres-presAt45)/(presAt0-presAt45))-1)/(constant:e^30-1)
           .

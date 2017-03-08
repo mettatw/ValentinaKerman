@@ -37,8 +37,9 @@ function runNode {
   // how long we need to burn BEFORE the maneuver point
   local eIsp is getEffIsp().
   local tBefore to getBurnTime(ship:availablethrust, ship:mass, eIsp, parNode:deltav:mag/2).
+  local tFull to getBurnTime(ship:availablethrust, ship:mass, eIsp, parNode:deltav:mag).
 
-  print "----> NODE eISP=" + round(eIsp, 2) + " pre " + round(tBefore, 2) + "s".
+  print "----> NODE eISP=" + round(eIsp, 2) + " pre " + round(tBefore, 2) + "s/" + round(tFull, 2) + "s".
   sas off.
   rcs off.
 
@@ -73,7 +74,8 @@ function runNode {
   // START DOING THE NODE
   local dv0 to parNode:deltav. // record the original deltaV, mainly for its direction
 
-  local currentThrottle is 0.
+  local currentThrottle is 1.
+  local tStart is time:seconds.
   lock throttle to currentThrottle.
   until vang(dv0, parNode:deltav) > 20 {
     local aNow is ship:availablethrust/ship:mass.
@@ -85,7 +87,7 @@ function runNode {
     set currentThrottle to min(max(0.3, parNode:deltav:mag/aNow*2), 1).
   }
 
-  print "End burn, remain dv " + round(parNode:deltav:mag,1) + "m/s".
+  print "End burn, dt=" + round(time:seconds-tStart,2) + "s err=" + round(parNode:deltav:mag,1) + "m/s".
   set ship:control:pilotmainthrottle to 0.
   set throttle to 0.
   unlock steering.
