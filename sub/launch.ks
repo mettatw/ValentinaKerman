@@ -22,7 +22,7 @@ function doLaunchAndGravityTurn {
     // arbitrary chosen, may not work somewhere...
     set spdTurnBegin to body:atm:sealevelpressure / 4.
     set presAt45 to body:atm:sealevelpressure / 5.
-    set presAt0 to body:atm:sealevelpressure / 2500.
+    set presAt0 to body:atm:sealevelpressure / 3000.
     ship:sensors:pres. // refuse to launch if no pressure sensor and inside atmosphere
   }
 
@@ -84,7 +84,7 @@ function doLaunchAndGravityTurn {
         print "45-degree at alt " + round(ship:altitude/1000,2) + "km".
         set runMode to 3.
       } else {
-        set minThrottle to 0.5.
+        set minThrottle to 1.
         set maxAngle to 45.
         if body:atm:exists {
           // should be near linear at this range, no worries
@@ -111,7 +111,7 @@ function doLaunchAndGravityTurn {
         } else {
           set angleBaseline to 45 + 45*(ship:altitude - altAt45)/(altAt0 - altAt45).
         }
-        set minThrottle to 0.2.
+        set minThrottle to 0.5.
       }
     }
 
@@ -121,8 +121,13 @@ function doLaunchAndGravityTurn {
         print "Apo reached at alt " + round(ship:altitude/1000,2) + "km".
         set runMode to 0.
       } else {
-        set angleBaseline to 90.
-        set minThrottle to 0.05.
+        if body:atm:exists {
+          set angleBaseline to 88.
+        } else {
+          set angleBaseline to 90.
+        }
+
+        set minThrottle to 0.1.
       }
 
     } // end runMode branch
@@ -130,6 +135,7 @@ function doLaunchAndGravityTurn {
     // Common Logic: When out of thrust, just stage
     if runMode <> 0 {
       if ship:availablethrust <= 0 and stage:ready {
+        pidThrottle:reset().
         stage.
         wait 0.1.
       }
@@ -144,7 +150,7 @@ function doLaunchAndGravityTurn {
       // Throttle control
       if twrMax > 0 {
         local scaleThrottle is pidThrottle:update(time:seconds, dETA)/2+0.5. // normalize to 0~1
-        set ship:control:pilotmainthrottle to (1/twrMax) + scaleThrottle*(twrMax-1)/twrMax.
+        set ship:control:pilotmainthrottle to (1.5/twrMax) + scaleThrottle*(twrMax-1.5)/twrMax.
         set ship:control:pilotmainthrottle to max(minThrottle, ship:control:pilotmainthrottle).
       }
 
