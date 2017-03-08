@@ -129,6 +129,7 @@ function doLaunchAndGravityTurn {
         set runMode to 0.
       } else {
         if body:atm:exists {
+          set maxAngle to 88.
           set angleBaseline to 88.
         } else {
           set angleBaseline to 90.
