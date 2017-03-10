@@ -86,7 +86,7 @@ function doLaunchAndGravityTurn {
 
     // 2: turn to 45 degree before specified altitude
     if runMode = 2 {
-      if ship:altitude >= altAt45 or (body:atm:exists and ship:sensors:pres <= presAt45) {
+      if (not body:atm:exists and ship:altitude >= altAt45) or (body:atm:exists and ship:sensors:pres <= presAt45) {
         print "45-degree at alt " + round(ship:altitude/1000,2) + "km".
         set runMode to 3.
       } else {
@@ -105,7 +105,7 @@ function doLaunchAndGravityTurn {
 
     // 3: turn to 0 degree before specified altitude
     if runMode = 3 {
-      if ship:altitude >= altAt0 or (body:atm:exists and ship:sensors:pres <= presAt0) {
+      if (not body:atm:exists and ship:altitude >= altAt0) or (body:atm:exists and ship:sensors:pres <= presAt0) {
         print "0-degree at alt " + round(ship:altitude/1000,2) + "km".
         set runMode to 4.
       } else {
@@ -140,12 +140,27 @@ function doLaunchAndGravityTurn {
 
     } // end runMode branch
 
-    // Common Logic: When out of thrust, just stage
+    // Staging: out of thrust, or automatic asparagus detection
     if runMode <> 0 {
-      if ship:availablethrust <= 0 and stage:ready {
-        pidThrottle:reset().
-        stage.
-        wait 0.1.
+      if stage:ready {
+        local doStage is 0.
+        if ship:availablethrust <= 0 {
+          set doStage to 1.
+        }
+        local thisTank is 0.
+        local thisRes is 0.
+        for thisTank in ship:partsdubbed("Aspara") {
+          for thisRes in thisTank:resources {
+            if thisRes:name = "LIQUIDFUEL" and thisRes:amount = 0 {
+              set doStage to 1.
+            }
+          }
+        }
+        if doStage = 1 {
+          pidThrottle:reset().
+          stage.
+          wait 0.1.
+        }
       }
     }
 
