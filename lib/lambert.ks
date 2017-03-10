@@ -30,6 +30,12 @@ function solveLambertLB {
   // turn angle
   local dth is vang(parPqwPos1, parPqwPos2).
 
+  local longway is 0.
+  if parDt < 0 {
+    set longway to 1. set parDt to -parDt.
+    set dth to dth - 360.
+  }
+
   // constants
   local c is sqrt(r1^2 + r2^2 - 2*r1*r2*cos(dth)).
   local s is (r1 + r2 + c) / 2.
@@ -73,7 +79,7 @@ function solveLambertLB {
   local x is x0.
   local xp is x0.
   local Tx is 99999.
-  from {local itr is 1.} until abs(Tx) < 1e-5 step {set itr to itr+1.} do {
+  from {local itr is 1.} until abs(Tx) < 1e-7 or itr > 12 step {set itr to itr+1.} do {
     local lb3 is __LancasterBlanchard(x, q, parM).
     local T1 is lb3[0].
     local T2 is lb3[1].
@@ -153,7 +159,7 @@ function __LancasterBlanchard {
     } else if Ee = 0 {
       set d to 0.
     } else {
-      set d to ln(max(0, f+Gg)).
+      set d to ln(max(0.0001, f+Gg)). // prevent log 0 error
     }
 
     local T1 is 2*(parX - parQ*z - d/y)/Ee.
