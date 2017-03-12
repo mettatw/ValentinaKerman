@@ -56,6 +56,10 @@ function addRMStdManu { // (lex, num, desc, maneuver-method, plan-func)
 
   set parLexProgram[parStartNum] to list("Plan " + parDesc, parFunc).
   set parLexProgram[parStartNum+10] to list("Exec " + parDesc, {
+    if not hasnode {
+      set ship:rootpart:tag to parStartNum:tostring.
+      reboot.
+    }
     runNode(parMethod).
   }).
 }
