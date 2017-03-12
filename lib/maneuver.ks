@@ -31,6 +31,19 @@ function planChangeAltitude { // (ta, alt)
   addNode(makeNodeFromVec(parTA, velDelta)).
 }
 
+// Just a convenient warpper around planChangeAltitude
+function planChangePeriod { // (ta, period)
+  parameter parTA. // True anomaly at burn point, 0 for periapsis
+  parameter parPeriod.
+
+  local kepShip is kepKSP(ship:orbit).
+  local smaNew is getOrbitSMAFromPeriod(kepShip["mu"], parPeriod).
+  local radiusHere is kepShip[".rOfTA"](parTA).
+
+  local radiusThere is smaNew*2 - radiusHere.
+  planChangeAltitude(parTA, radiusThere - kepShip["brad"]).
+}
+
 function planChangeInc { // (ta, dinc)
   parameter parTA. // True anomaly at burn point, 0 for periapsis
   parameter parDeltaInc.
@@ -68,7 +81,7 @@ function planMatchInc { // (kep)
 function planMatchAltitudeSpecial { // {kep, orient, [alt=-1])
   parameter parKep.
   parameter parOrient. // "DN", "AN", "AN/DN", "Apo", "Peri"
-  parameter parAltitude is -1. // not specified = compute from target orbit
+  parameter parAltitude is -1. // not specified = compute from target orbit, "peri" or "apo" also work
 
   local kepShip is kepKSP(ship:orbit).
   local taNow is ship:orbit:trueanomaly.
@@ -102,6 +115,13 @@ function planMatchAltitudeSpecial { // {kep, orient, [alt=-1])
     print "Error planMatchAltitudeSpecial: parOrient " + parOrient + " seems incorrect.".
     return.
   }
+
+  if parAltitude = "peri" {
+    set parAltitude to parKep[".altOfTA"](0).
+  } else if parAltitude = "apo" {
+    set parAltitude to parKep[".altOfTA"](180).
+  }
+
   planMatchAltitude(parKep, taTarget, parAltitude).
 }
 
@@ -117,5 +137,10 @@ function planMatchAltitude { // (kep, ta, [alt=-1])
     set parAltitude to parKep[".altOfTA"](parTATarget).
   }
 
-  planChangeAltitude(parKep[".convTA"](kepShip, 180-parTATarget), parAltitude).
+  //print "====". // DEBUG
+  //print parTATarget. // DEBUG
+  //print parTATarget+180.
+  //print parKep[".convTA"](kepShip, 180+parTATarget).
+
+  planChangeAltitude(parKep[".convTA"](kepShip, 180+parTATarget), parAltitude).
 }

@@ -184,7 +184,7 @@ function __kepAddSuffix {
     local vecANDir is vcrs(plane1, plane2).
     return kepRaw[".taOfPos"](vecANDir).
   }.
-  set kepRaw[".convTA"] to { // (kep, ta) Terrible approx. only meaningful when inclination diff is neglegible
+  set kepRaw[".convTA"] to { // (kep, ta) maybe a bit inaccurate..?
     parameter parKep.
     parameter parTA.
     return convertOrbitTA(kepRaw["lan"], kepRaw["aop"], parKep["lan"], parKep["aop"], parTA).
