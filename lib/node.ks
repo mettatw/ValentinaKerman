@@ -28,12 +28,13 @@ function combineNode {
   local nd1 is allnodes[0].
   local nd2 is allnodes[1].
   if abs(nd1:eta - nd2:eta) > 10 { return 0. }.
+  local ndNew is node(time:seconds + nd1:eta, 0, 0, 0).
+  set ndNew:prograde to nd1:prograde + nd2:prograde.
+  set ndNew:normal to nd1:normal + nd2:normal.
+  set ndNew:radialout to nd1:radialout + nd2:radialout.
   remove nd1.
   remove nd2.
-  set nd1:prograde to nd1:prograde + nd2:prograde.
-  set nd1:normal to nd1:normal + nd2:normal.
-  set nd1:radialout to nd1:radialout + nd2:radialout.
-  add nd1.
+  add ndNew.
 }
 
 function makeNode { // (ta, radialout, normal, prograde, [round=0])
