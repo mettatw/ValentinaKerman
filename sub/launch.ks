@@ -185,8 +185,10 @@ function doLaunchAndGravityTurn {
       } else {
         set angleSteer to angleBaseline + dAngleMultiplier * angleDelta*2.
       }
-      if runMode >= 3 and dETA < -25 { // for safety
-        set angleSteer to angleSteer + dETA*1.5.
+      if runMode = 3 and dETA < -20 { // for safety
+        set angleSteer to max(0, angleSteer + (dETA+20)*2).
+      } else if runMode >= 4 and dETA < -10 {
+        set angleSteer to max(0, angleSteer + (dETA+10)*2).
       }
       set angleSteer to min(maxAngle, angleSteer).
       set angleSteer to max(0, angleSteer).
