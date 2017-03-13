@@ -137,10 +137,5 @@ function planMatchAltitude { // (kep, ta, [alt=-1])
     set parAltitude to parKep[".altOfTA"](parTATarget).
   }
 
-  //print "====". // DEBUG
-  //print parTATarget. // DEBUG
-  //print parTATarget+180.
-  //print parKep[".convTA"](kepShip, 180+parTATarget).
-
   planChangeAltitude(parKep[".convTA"](kepShip, 180+parTATarget), parAltitude).
 }
