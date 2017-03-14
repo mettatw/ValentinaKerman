@@ -133,13 +133,13 @@ function __kepAddSuffix {
   }.
 
   // vectors
-  set kepRaw[".posOfTA"] to {
+  set kepRaw[".posOfTA"] to { // (ta)
     parameter parTA.
     set parTA to angNorm(parTA).
     local radius is kepRaw[".rOfTA"](parTA).
     return kepRaw[".pqwTo"](V(cos(parTA)*radius, sin(parTA)*radius, 0)).
   }.
-  set kepRaw[".velOfTA"] to {
+  set kepRaw[".velOfTA"] to { // (ta)
     parameter parTA.
     set parTA to angNorm(parTA).
     local ea is 2*arctan2(sqrt((1-kepRaw["ecc"])/(1+kepRaw["ecc"]))*sin(parTA/2), cos(parTA/2)).
@@ -184,7 +184,7 @@ function __kepAddSuffix {
     local vecANDir is vcrs(plane1, plane2).
     return kepRaw[".taOfPos"](vecANDir).
   }.
-  set kepRaw[".convTA"] to { // (kep, ta) maybe a bit inaccurate..?
+  set kepRaw[".convTA"] to { // (kep, ta)
     parameter parKep.
     parameter parTA.
     return convertOrbitTA(kepRaw["lan"], kepRaw["aop"], parKep["lan"], parKep["aop"], parTA).

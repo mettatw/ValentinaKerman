@@ -18,11 +18,14 @@ runoncepath("lib/node").
 
 // Plan a maneuver to change altitude at specific true anomaly
 // This will treat that point as one *apsis, and given altitude as another
-function planChangeAltitude { // (ta, alt)
+function planChangeAltitude { // (ta, [alt=current])
   parameter parTA. // True anomaly at burn point, 0 for periapsis
-  parameter parAlt.
+  parameter parAlt is -1.
 
   local kepShip is kepKSP(ship:orbit).
+  if parAlt = -1 {
+    set parAlt to kepShip[".rOfTA"](parTA) - kepShip[".brad"].
+  }
   local kepNew is kepModChangeAlt(kepShip, parTA, parAlt).
   local taNew is kepNew[".taOfPos"](kepShip[".posOfTA"](parTA)).
 
@@ -125,7 +128,7 @@ function planMatchAltitudeSpecial { // {kep, orient, [alt=-1])
   planMatchAltitude(parKep, taTarget, parAltitude).
 }
 
-function planMatchAltitude { // (kep, ta, [alt=-1])
+function planMatchAltitude { // (kep, ta, [alt=-1]) NOTE: ta is target orbit ta, not ours
   parameter parKep.
   parameter parTATarget.
   parameter parAltitude is -1. // not specified = compute from target orbit
@@ -138,4 +141,15 @@ function planMatchAltitude { // (kep, ta, [alt=-1])
   }
 
   planChangeAltitude(parKep[".convTA"](kepShip, 180+parTATarget), parAltitude).
+}
+
+function planMatchOrbit { // (kep, taOur)
+  parameter parKep.
+  parameter parTA.
+
+  local kepShip is kepKSP(ship:orbit).
+  local taTheir is kepShip[".convTA"](parKep, parTA).
+  local velTheir is parKep[".velOfTA"](taTheir).
+  local velOur is kepShip[".velOfTA"](parTA).
+  addNode(makeNodeFromVec(parTA, velTheir-velOur)).
 }
