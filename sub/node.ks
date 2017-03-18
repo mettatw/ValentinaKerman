@@ -16,10 +16,33 @@
 runoncepath("lib/node").
 runoncepath("lib/ship").
 
-// Basic manuever node
+// Get the next node
+function getNode {
+  waitActive.
+  if hasnode {
+    return nextnode.
+  } else {
+    return node(time:seconds+3, 0, 0, 0).
+  }
+}
+
+// Add node and show message
+function addNode {
+  parameter parNode.
+  waitActive.
+  add parNode.
+  print "new node dv=" + round(parNode:deltav:mag, 2) + " ("
+    + round(parNode:radialout, 2) + ", "
+    + round(parNode:normal, 2) + ", "
+    + round(parNode:prograde, 2) + ")".
+}
+
+// Run Basic manuever node
 function runNode {
-  parameter parMode is 0. // 0=just wait, 1=warp, "string"=KAC alarm
+  parameter parMode is 0. // 0=just wait, 1=warp
   parameter parNode is 0.
+
+  waitActive().
 
   if parNode = 0 {
     set parNode to getNode().
@@ -94,3 +117,4 @@ function runNode {
   unlock throttle.
   remove parNode.
 }
+

@@ -1,6 +1,6 @@
 // Kill the next node
 @lazyglobal off.
 
-runoncepath("lib/node").
+runoncepath("sub/node").
 
 remove getNode().
