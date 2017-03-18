@@ -95,20 +95,44 @@ function __kepAddSuffix {
     set kepRaw["period"] to 2 * constant:pi * sqrt(kepRaw["sma"]^3 / kepRaw["mu"]).
   }
 
-  // coordinates
-  set kepRaw[".vecPeri"] to {
+  // coordinates. PQW=perifocal (peri, 90-deg, plane) DVV=DeltaV (radialout,normal,prograde)
+  set kepRaw[".vecPeri"] to { // ()
     return getVecOrbitPeri(kepRaw["lan"], kepRaw["aop"], kepRaw["inc"], kepRaw["pe"]).
   }.
-  set kepRaw[".vecPlane"] to {
+  set kepRaw[".vecPlane"] to { // ()
     return getVecOrbitPlane(kepRaw["lan"], kepRaw["inc"]).
   }.
-  set kepRaw[".pqwFrom"] to {
+  set kepRaw[".pqwFrom"] to { // (vec)
     parameter parVec.
     return convertToOrbitFrame(kepRaw["lan"], kepRaw["aop"], kepRaw["inc"], parVec).
   }.
-  set kepRaw[".pqwTo"] to {
+  set kepRaw[".pqwTo"] to { // (pqw)
+    parameter parPqw.
+    return convertFromOrbitFrame(kepRaw["lan"], kepRaw["aop"], kepRaw["inc"], parPqw).
+  }.
+  set kepRaw[".dvvFrom"] to { // (ta, vec)
+    parameter parTA.
     parameter parVec.
-    return convertFromOrbitFrame(kepRaw["lan"], kepRaw["aop"], kepRaw["inc"], parVec).
+
+    local axisPrograde is kepRaw[".velOfTA"](parTA):normalized.
+    // normal is defined by right-hand rule, as opposed to ksp's left-hand
+    local axisNormal is -kepRaw[".vecPlane"]():normalized.
+    // we want radial-out, this cross will give us radial-in
+    local axisRadialOut is -vcrs(axisPrograde, axisNormal).
+
+    return V(vdot(parVec, axisRadialOut), vdot(parVec, axisNormal), vdot(parVec, axisPrograde)).
+  }.
+  set kepRaw[".dvvTo"] to { // (ta, vec)
+    parameter parTA.
+    parameter parVec.
+
+    local axisPrograde is kepRaw[".velOfTA"](parTA):normalized.
+    // normal is defined by right-hand rule, as opposed to ksp's left-hand
+    local axisNormal is -kepRaw[".vecPlane"]():normalized.
+    // we want radial-out, this cross will give us radial-in
+    local axisRadialOut is -vcrs(axisPrograde, axisNormal).
+
+    return axisRadialOut*parVec:x + axisNormal*parVec:y + axisPrograde*parVec:z.
   }.
 
   // plain numbers
