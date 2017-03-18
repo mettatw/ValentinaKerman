@@ -15,10 +15,11 @@
 
 runoncepath("lib/node").
 runoncepath("lib/ship").
+runoncepath("sub/ship"). // for "waitActive"
 
 // Get the next node
 function getNode {
-  waitActive.
+  waitActive().
   if hasnode {
     return nextnode.
   } else {
@@ -29,12 +30,22 @@ function getNode {
 // Add node and show message
 function addNode {
   parameter parNode.
-  waitActive.
+  waitActive().
   add parNode.
   print "new node dv=" + round(parNode:deltav:mag, 2) + " ("
     + round(parNode:radialout, 2) + ", "
     + round(parNode:normal, 2) + ", "
     + round(parNode:prograde, 2) + ")".
+}
+
+// Add node and make node in one go
+function addMakeNode {
+  parameter parTA.
+  parameter parDvv.
+  parameter parRound is 0.
+
+  local nd is makeNode(parTA, parDvv, parRound).
+  addNode(nd).
 }
 
 // Run Basic manuever node

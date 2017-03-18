@@ -19,7 +19,7 @@ runoncepath("lib/kep").
 // Create a node based on radialout,normal,prograde value
 function makeNode { // (ta, V(radialout,normal,prograde), [round=0])
   parameter parTA.
-  parameter parDeltav.
+  parameter parDvv.
   parameter parRound is 0.
 
   // Find the time to burn point
@@ -27,7 +27,7 @@ function makeNode { // (ta, V(radialout,normal,prograde), [round=0])
   local taNow is ship:orbit:trueanomaly.
   local timeToBurn is time:seconds + kepShip[".timeThruTA"](taNow, parTA) + parRound*kepShip["period"].
 
-  return node(timeToBurn, parDeltav:x, parDeltav:y, parDeltav:z).
+  return node(timeToBurn, parDvv:x, parDvv:y, parDvv:z).
 }
 
 // Create a node based on world vector
