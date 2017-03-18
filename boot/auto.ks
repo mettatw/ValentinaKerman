@@ -1,12 +1,18 @@
 // Boot script to automatically do mission
 @lazyglobal off.
 
-CORE:PART:GETMODULE("kOSProcessor"):DOEVENT("Open Terminal").
-set Terminal:HEIGHT to 46.
-set Terminal:WIDTH to 60.
-set Terminal:CHARHEIGHT to 11.
-set Terminal:CHARWIDTH to 11.
-set Terminal:BRIGHTNESS to 1.0.
+wait 3.
+
+if ship = kuniverse:activevessel {
+  if not core:part:tag:startswith("INACTIVE") {
+    CORE:PART:GETMODULE("kOSProcessor"):DOEVENT("Open Terminal").
+    set Terminal:HEIGHT to 46.
+    set Terminal:WIDTH to 60.
+    set Terminal:CHARHEIGHT to 11.
+    set Terminal:CHARWIDTH to 11.
+    set Terminal:BRIGHTNESS to 1.0.
+  }
+}
 
 switch to 1.
 if not exists("1:/sync") {
@@ -18,4 +24,8 @@ if not exists("1:/sync") {
 }
 
 wait 5.
-run go.
+if not core:part:tag:startswith("INACTIVE") {
+  run go.
+} else {
+  shutdown.
+}

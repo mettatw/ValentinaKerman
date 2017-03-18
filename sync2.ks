@@ -30,8 +30,12 @@ function doSync {
   }
 
   // Mission script
-  if core:part:tag:length > 0 {
-    buildOneFile("mission/" + core:part:tag + ".ks").
+  local tagReal is core:part:tag.
+  if tagReal:startswith("INACTIVE") {
+    set tagReal to tagReal:replace("INACTIVE:", "").
+  }
+  if tagReal:length > 0 {
+    buildOneFile("mission/" + tagReal + ".ks").
   }
 }
 print "".
