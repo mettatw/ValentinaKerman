@@ -37,6 +37,12 @@ function addNode {
     + round(parNode:normal, 2) + ", "
     + round(parNode:prograde, 2) + ")".
 }
+function addManu {
+  parameter parManu.
+  addNode(
+    node(parManu["ut"], parManu["dvv"]:x, parManu["dvv"]:y, parManu["dvv"]:z)
+  ).
+}
 
 // Add node and make node in one go
 function addMakeNode {

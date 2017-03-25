@@ -15,12 +15,32 @@
 
 runoncepath("lib/kep").
 
-// Make an orbit with a TA as one *apsis, and some altitude as another
-function kepModChangeAlt { // (kep, ta, [alt=current])
+// ====== The maneuver object ======
+
+function manuTaDvv { // (kep, taNow, ta, dvv, [round=0])
   parameter parKep.
+  parameter parTANow.
+  parameter parTA.
+  parameter parDvv.
+  parameter parRound is 0.
+
+  local rslt is lexicon("kep", parKep, "ta", parTA, "dvv", parDvv,
+    "ut", time:seconds + parKep[".timeThruTA"](parTANow, parTA) + parRound*parKep["period"]
+    ).
+  return rslt.
+}
+
+// ====== Simple orbit changes ======
+
+// Make an orbit with a TA as one *apsis, and some altitude as another
+function kepModChangeAlt { // (ta, [alt=current], [kep])
   parameter parTA.
   parameter parAlt is -1.
+  parameter parKep is -1.
 
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
   if parAlt = -1 {
     set parAlt to parKep[".rOfTA"](parTA) - parKep["brad"].
   }
@@ -36,35 +56,59 @@ function kepModChangeAlt { // (kep, ta, [alt=current])
     ).
   }
 }
-function getDvvChangeAltitude { // (kep, ta, [alt=current]) wrapper
-  parameter parKep.
+function getManuChangeAltitude { // (ta, [alt=current], [kep], [taNow], [round=0])
   parameter parTA. // True anomaly at burn point
   parameter parAlt is -1.
+  parameter parKep is -1.
+  parameter parTANow is -1. // True anomaly now
+  parameter parRound is 0.
 
-  return parKep[".dvvAt"](kepModChangeAlt(parKep, parTA, parAlt), parTA).
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
+  if parTANow = -1 {
+    set parTANow to ship:orbit:trueanomaly.
+  }
+  local dvvBurn is parKep[".dvvAt"](kepModChangeAlt(parTA, parAlt, parKep), parTA).
+  return manuTaDvv(parKep, parTANow, parTA, dvvBurn, parRound).
 }
 
 // Make an orbit changing inclination at TA
-function kepModChangeInc { // (kep, ta, d-inc)
-  parameter parKep.
+function kepModChangeInc { // (ta, d-inc, [kep])
   parameter parTA.
   parameter parDeltaInc.
+  parameter parKep is -1.
+
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
 
   local velBefore is parKep[".velOfTA"](parTA).
   local velAfter is vrot(velBefore, parKep[".posOfTA"](parTA), -parDeltaInc).
 
   return kepState(parKep["body"], parKep[".posOfTA"](parTA), velAfter).
 }
-function getDvvChangeInc { // (kep, ta, d-inc)
-  parameter parKep.
-  parameter parTA.
+function getManuChangeInc { // (ta, dinc, [kep], [taNow], [round=0])
+  parameter parTA. // True anomaly at burn point
   parameter parDeltaInc.
+  parameter parKep is -1.
+  parameter parTANow is -1.
+  parameter parRound is 0.
+
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
+  if parTANow = -1 {
+    set parTANow to ship:orbit:trueanomaly.
+  }
 
   // Not using the kep object here, just compute the appropriate velocity change
   local velBefore is parKep[".velOfTA"](parTA).
   local velAfter is vrot(velBefore, parKep[".posOfTA"](parTA), -parDeltaInc).
 
-  return parKep[".dvvFrom"](parTA, velAfter-velBefore).
+  local dvvBurn is parKep[".dvvFrom"](parTA, velAfter-velBefore).
+
+  return manuTaDvv(parKep, parTANow, parTA, dvvBurn, parRound).
 }
 
 
@@ -83,19 +127,31 @@ function getDvvChangeInc { // (kep, ta, d-inc)
 
 // ====== Based on other orbit ======
 
-function kepModMatchInc { // (kep, kep2)
-  parameter parKep.
+function kepModMatchInc { // (kep2, [kep])
   parameter parKepTarget.
+  parameter parKep is -1.
+
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
 
   return kepAPRaw(parKep["body"], parKep["ap"], parKep["pe"],
     parKepTarget["inc"], parKepTarget["lan"],
     parKep["aop"] + parKep["lan"] - parKepTarget["lan"]
     ).
 }
-function getDvvMatchInc { // (kep, kep2, taNow)
-  parameter parKep.
+function getManuMatchInc { // (kep2, [kep], [taNow], [round=0])
   parameter parKepTarget.
-  parameter parTANow.
+  parameter parKep is -1.
+  parameter parTANow is -1.
+  parameter parRound is 0.
+
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
+  if parTANow = -1 {
+    set parTANow to ship:orbit:trueanomaly.
+  }
 
   // Implement this by computing the inclination, instead of directly use new orbit
   // No idea why the latter case produces inaccurate maneuver... (changed ap/pe)
@@ -104,9 +160,9 @@ function getDvvMatchInc { // (kep, kep2, taNow)
   local taNode is parKep[".taAtNextNode"](parKepTarget, parTANow).
 
   if abs(taAN - taNode) < 1 {
-    return getDvvChangeInc(parKep, taNode, -relInc).
+    return getManuChangeInc(taNode, -relInc, parKep, parTANow, parRound).
   } else { // at DN
-    return getDvvChangeInc(parKep, taNode, relInc).
+    return getManuChangeInc(taNode, relInc, parKep, parTANow, parRound).
   }
 }
 

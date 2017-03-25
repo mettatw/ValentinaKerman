@@ -1,5 +1,6 @@
 @lazyglobal off.
 
+runoncepath("sub/node").
 runoncepath("lib/maneuver").
 runoncepath("lib/ship").
 
@@ -231,6 +232,6 @@ function doLaunchAndGravityTurn {
   set ship:control:pilotmainthrottle to 0.
   unlock steering.
 
-  planChangeAltitude(180, ship:orbit:apoapsis). // circularize maneuver node
+  addManu(getManuChangeAltitude(180)). // circularization maneuver node
 }
 
