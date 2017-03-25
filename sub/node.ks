@@ -28,7 +28,7 @@ function getNode {
 }
 
 // Add node and show message
-function addNode {
+function addNode { // (node)
   parameter parNode.
   waitActive().
   add parNode.
@@ -37,7 +37,7 @@ function addNode {
     + round(parNode:normal, 2) + ", "
     + round(parNode:prograde, 2) + ")".
 }
-function addManu {
+function addManu { // (manu)
   parameter parManu.
   addNode(
     node(parManu["ut"], parManu["dvv"]:x, parManu["dvv"]:y, parManu["dvv"]:z)
@@ -45,7 +45,7 @@ function addManu {
 }
 
 // Add node and make node in one go
-function addMakeNode {
+function addMakeNode { // (ta, dvv, [round=0])
   parameter parTA.
   parameter parDvv.
   parameter parRound is 0.
@@ -76,8 +76,12 @@ function runNode {
 
   // how long we need to burn BEFORE the maneuver point
   local eIsp is getEffIsp().
-  local tBefore to getBurnTime(ship:availablethrust, ship:mass, eIsp, parNode:deltav:mag/2).
-  local tFull to getBurnTime(ship:availablethrust, ship:mass, eIsp, parNode:deltav:mag).
+  local tBefore is getBurnTime(ship:availablethrust, ship:mass, eIsp, parNode:deltav:mag/2).
+  local tFull is getBurnTime(ship:availablethrust, ship:mass, eIsp, parNode:deltav:mag).
+
+  // If the burn is long, we don't need to low thrust at the end
+  // But if the burn is VERY short, it is a better idea to allow lower thrust
+  local minThrust is min(0.3, tFull/2).
 
   print "----> NODE eISP=" + round(eIsp, 2) + " pre " + round(tBefore, 2) + "s/" + round(tFull, 2) + "s".
   sas off.
@@ -124,7 +128,7 @@ function runNode {
     // throttle is 100% until there is less than 0.5 second of time left to burn
     // when there is less than 1 second - decrease the throttle linearly
     // also with arbitrary limit, avoid burn too long being inaccurate
-    set currentThrottle to min(max(0.3, parNode:deltav:mag/aNow*2), 1).
+    set currentThrottle to min(max(minThrust, parNode:deltav:mag/aNow*2), 1).
   }
 
   print "End burn, dt=" + round(time:seconds-tStart,2) + "s err=" + round(parNode:deltav:mag,1) + "m/s".

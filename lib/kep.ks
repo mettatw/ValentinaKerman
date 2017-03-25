@@ -137,13 +137,37 @@ function __kepAddSuffix {
 
     return V(vdot(parVec, axisRadialOut), vdot(parVec, axisNormal), vdot(parVec, axisPrograde)).
   }.
-  set kepRaw[".dvvTo"] to { // (ta, vec)
+  set kepRaw[".dvvTo"] to { // (ta, dvv)
     parameter parTA.
     parameter parVec.
 
     local axisPrograde is kepRaw[".velOfTA"](parTA):normalized.
     // normal is defined by right-hand rule, as opposed to ksp's left-hand
     local axisNormal is -kepRaw[".vecPlane"]():normalized.
+    // we want radial-out, this cross will give us radial-in
+    local axisRadialOut is -vcrs(axisPrograde, axisNormal).
+
+    return axisRadialOut*parVec:x + axisNormal*parVec:y + axisPrograde*parVec:z.
+  }.
+  set kepRaw[".dvvFromPqw"] to { // (ta, pqw)
+    parameter parTA.
+    parameter parVec.
+
+    local axisPrograde is kepRaw[".velpqwOfTA"](parTA):normalized.
+    // normal is defined by right-hand rule, as opposed to ksp's left-hand
+    local axisNormal is V(0,0,1).
+    // we want radial-out, this cross will give us radial-in
+    local axisRadialOut is -vcrs(axisPrograde, axisNormal).
+
+    return V(vdot(parVec, axisRadialOut), vdot(parVec, axisNormal), vdot(parVec, axisPrograde)).
+  }.
+  set kepRaw[".dvvToPqw"] to { // (ta, dvv)
+    parameter parTA.
+    parameter parVec.
+
+    local axisPrograde is kepRaw[".velpqwOfTA"](parTA):normalized.
+    // normal is defined by right-hand rule, as opposed to ksp's left-hand
+    local axisNormal is V(0,0,1).
     // we want radial-out, this cross will give us radial-in
     local axisRadialOut is -vcrs(axisPrograde, axisNormal).
 
@@ -172,19 +196,26 @@ function __kepAddSuffix {
   }.
 
   // vectors
-  set kepRaw[".posOfTA"] to { // (ta)
+  set kepRaw[".pqwOfTA"] to { // (ta)
     parameter parTA.
     set parTA to angNorm(parTA).
     local radius is kepRaw[".rOfTA"](parTA).
-    return kepRaw[".pqwTo"](V(cos(parTA)*radius, sin(parTA)*radius, 0)).
+    return V(cos(parTA)*radius, sin(parTA)*radius, 0).
   }.
-  set kepRaw[".velOfTA"] to { // (ta)
+  set kepRaw[".posOfTA"] to { // (ta)
+    parameter parTA.
+    return kepRaw[".pqwTo"](kepRaw[".pqwOfTA"](parTA)).
+  }.
+  set kepRaw[".velpqwOfTA"] to { // (ta)
     parameter parTA.
     set parTA to angNorm(parTA).
     local ea is 2*arctan2(sqrt((1-kepRaw["ecc"])/(1+kepRaw["ecc"]))*sin(parTA/2), cos(parTA/2)).
     local radius is kepRaw[".rOfTA"](parTA).
-    return kepRaw[".pqwTo"](V(-sin(ea), sqrt(1-kepRaw["ecc"]^2)*cos(ea), 0))
-      * sqrt(kepRaw["mu"]*kepRaw["sma"])/radius.
+    return V(-sin(ea), sqrt(1-kepRaw["ecc"]^2)*cos(ea), 0) * sqrt(kepRaw["mu"]*kepRaw["sma"])/radius.
+  }.
+  set kepRaw[".velOfTA"] to { // (ta)
+    parameter parTA.
+    return kepRaw[".pqwTo"](kepRaw[".velpqwOfTA"](parTA)).
   }.
 
   // between TA and MA

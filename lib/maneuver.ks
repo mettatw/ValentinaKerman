@@ -14,6 +14,7 @@
 @lazyglobal off.
 
 runoncepath("lib/kep").
+runoncepath("lib/lambert").
 
 // ====== The maneuver object ======
 
@@ -215,7 +216,6 @@ function getManuMatchOrbit { // (kep2, ta, [kep], [taNow], [round=0])
   if parTANow = -1 {
     set parTANow to ship:orbit:trueanomaly.
   }
-  
   if parTATarget = "AN/DN" {
     set parTATarget to parKep[".convTA"](parKepTarget, parKep[".taAtNextNode"](kepTarget, parTANow)).
   }
@@ -223,4 +223,37 @@ function getManuMatchOrbit { // (kep2, ta, [kep], [taNow], [round=0])
   local taOur is parKepTarget[".convTA"](parKep, parTATarget).
   local dvvBurn is parKep[".dvvAt"](parKepTarget, taOur).
   return manuTaDvv(parKep, parTANow, taOur, dvvBurn, parRound).
+}
+
+// Do small course correction to some destination point on some other orbit
+// Will be very errornous if used on large corrections
+function getManuCorrectionOrbit { // (kep2, ta2, [kep], [taNow])
+  parameter parKepTarget.
+  parameter parTATarget. // special value: can also be string "AN/DN"
+  parameter parKep is -1.
+  parameter parTANow is -1. // Our True anomaly now
+
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
+  if parTANow = -1 {
+    set parTANow to ship:orbit:trueanomaly.
+  }
+  if parTATarget = "AN/DN" {
+    set parTATarget to parKep[".convTA"](parKepTarget, parKep[".taAtNextNode"](kepTarget, parTANow)).
+  }
+
+  // Do the correction 3 minutes later
+  local taBurn is parKep[".taAfterTime"](parTANow, 180).
+
+  local pqwEnd is parKep[".pqwFrom"](parKepTarget[".posOfTA"](parTATarget)).
+  local pqwStart is parKep[".pqwOfTA"](taBurn).
+  // Assume time is approximately proportional to straight-line distance
+  local taTargetOur is parKepTarget[".convTA"](parKep, parTATarget).
+  local dt is parKep[".timeThruTA"](taBurn, taTargetOur)
+    / (parKep[".pqwOfTA"](taTargetOur) - pqwStart):mag * (pqwEnd - pqwStart):mag.
+
+  local velpqwStart is parKep[".velpqwOfTA"](taBurn).
+  local path is solveLambertLBPrograde(velpqwStart, pqwStart, pqwEnd, dt, parKep["mu"]).
+  return manuTaDvv(parKep, parTANow, taBurn, kepShip[".dvvFromPqw"](taBurn, path[0] - velpqwStart)).
 }

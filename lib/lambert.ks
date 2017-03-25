@@ -6,13 +6,30 @@
 
 runoncepath("lib/math").
 
+// Also consider the target velocity:
+// only find the "prograde" solution, without the need to reverse our flight path
+function solveLambertLBPrograde { // (vel1, pos1, pos2, dt, mu, [round=0])
+  parameter parPqwVel1.
+  parameter parPqwPos1.
+  parameter parPqwPos2.
+  parameter parDt.
+  parameter parMu.
+  parameter parM is 0. // number of rounds
+
+  if vdot(parPqwVel1, parPqwPos2) < 0 { // pos2 is in the "retrograde" half-sphere
+    return solveLambertLB(parPqwPos1, parPqwPos2, -parDt, parMu, parM).
+  } else {
+    return solveLambertLB(parPqwPos1, parPqwPos2, parDt, parMu, parM).
+  }
+}
+
 // Solver based on:
 // Gooding, R.H. "A procedure for the solution of Lambert's orbital boundary-value 
 // problem." Celestial Mechanics and Dynamical Astronomy, 1990
 // Will return a list: [v1, v2]
 // Will just return a single -1 if failed
 // NOTE: I have no idea how this work at all...
-function solveLambertLB {
+function solveLambertLB { // (pos1, pos2, dt, mu, [round=0])
   parameter parPqwPos1.
   parameter parPqwPos2.
   parameter parDt.
