@@ -34,9 +34,9 @@ function addRMStdLaunch { // (lex, num, km, azimuth)
   parameter parAzimuth is 90.
 
   set parLexProgram[parStartNum] to list("Pre-launch countdown", {
-    print "Ready to launch T-15".
-    from {local i is 15.} until i = 0 step {set i to i-1.} do {
-      if i<=5 or i=10 { print i. }.
+    print "Ready to launch T-10".
+    from {local i is 10.} until i = 0 step {set i to i-1.} do {
+      if i<=5 or mod(i, 2)=0 { print i. }.
       wait 1.
     }
   }).

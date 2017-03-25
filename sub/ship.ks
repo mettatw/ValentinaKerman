@@ -18,3 +18,23 @@ function doPartTesting { // (tag)
   parameter parTag.
   ship:partsdubbed(parTag)[0]:getmodule("ModuleTestSubject"):doevent("Run Test").
 }
+
+function waitActive { // wait cpu vessel became active one
+  if ship <> kuniverse:activevessel {
+    print "Waiting until we became the active vessel...".
+    wait until ship <> kuniverse:activevessel.
+  }
+}
+
+function activateCPU { // activate inactive CPU by tag
+  parameter parTag.
+
+  local listParts is ship:partsdubbed(parTag).
+  if listParts:length = 0 {
+    print "There seem to be no CPU tagged " + parTag.
+    return 0.
+  }
+  set listParts[0]:tag to parTag:replace("INACTIVE:", "").
+  wait 3.
+  listParts[0]:getmodule("kOSProcessor"):doevent("toggle power").
+}

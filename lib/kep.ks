@@ -45,6 +45,21 @@ function kepAP { // (body, ap, pe, inc, lan, aop)
   return __kepAddSuffix(rslt).
 }
 
+// Basic constructor: input body/ap/pe/inc/lan/aop
+// AP/PE in the input here is radius, not altitude as used in KSP
+function kepAPRaw { // (body, ap, pe, inc, lan, aop)
+  parameter parBody.
+  parameter parAp.
+  parameter parPe.
+  parameter parInc.
+  parameter parLan.
+  parameter parAop.
+
+  local rslt is lexicon("body", parBody, "inc", parInc, "lan", parLan, "aop", parAop,
+    "ap", parAp, "pe", parPe).
+  return __kepAddSuffix(rslt).
+}
+
 // Get the values from an actual orbit object
 function kepKSP { // (orbit, patch)
   parameter parOrbit.
@@ -95,20 +110,44 @@ function __kepAddSuffix {
     set kepRaw["period"] to 2 * constant:pi * sqrt(kepRaw["sma"]^3 / kepRaw["mu"]).
   }
 
-  // coordinates
-  set kepRaw[".vecPeri"] to {
+  // coordinates. PQW=perifocal (peri, 90-deg, plane) DVV=DeltaV (radialout,normal,prograde)
+  set kepRaw[".vecPeri"] to { // ()
     return getVecOrbitPeri(kepRaw["lan"], kepRaw["aop"], kepRaw["inc"], kepRaw["pe"]).
   }.
-  set kepRaw[".vecPlane"] to {
+  set kepRaw[".vecPlane"] to { // ()
     return getVecOrbitPlane(kepRaw["lan"], kepRaw["inc"]).
   }.
-  set kepRaw[".pqwFrom"] to {
+  set kepRaw[".pqwFrom"] to { // (vec)
     parameter parVec.
     return convertToOrbitFrame(kepRaw["lan"], kepRaw["aop"], kepRaw["inc"], parVec).
   }.
-  set kepRaw[".pqwTo"] to {
+  set kepRaw[".pqwTo"] to { // (pqw)
+    parameter parPqw.
+    return convertFromOrbitFrame(kepRaw["lan"], kepRaw["aop"], kepRaw["inc"], parPqw).
+  }.
+  set kepRaw[".dvvFrom"] to { // (ta, vec)
+    parameter parTA.
     parameter parVec.
-    return convertFromOrbitFrame(kepRaw["lan"], kepRaw["aop"], kepRaw["inc"], parVec).
+
+    local axisPrograde is kepRaw[".velOfTA"](parTA):normalized.
+    // normal is defined by right-hand rule, as opposed to ksp's left-hand
+    local axisNormal is -kepRaw[".vecPlane"]():normalized.
+    // we want radial-out, this cross will give us radial-in
+    local axisRadialOut is -vcrs(axisPrograde, axisNormal).
+
+    return V(vdot(parVec, axisRadialOut), vdot(parVec, axisNormal), vdot(parVec, axisPrograde)).
+  }.
+  set kepRaw[".dvvTo"] to { // (ta, vec)
+    parameter parTA.
+    parameter parVec.
+
+    local axisPrograde is kepRaw[".velOfTA"](parTA):normalized.
+    // normal is defined by right-hand rule, as opposed to ksp's left-hand
+    local axisNormal is -kepRaw[".vecPlane"]():normalized.
+    // we want radial-out, this cross will give us radial-in
+    local axisRadialOut is -vcrs(axisPrograde, axisNormal).
+
+    return axisRadialOut*parVec:x + axisNormal*parVec:y + axisPrograde*parVec:z.
   }.
 
   // plain numbers
@@ -184,10 +223,33 @@ function __kepAddSuffix {
     local vecANDir is vcrs(plane1, plane2).
     return kepRaw[".taOfPos"](vecANDir).
   }.
+  set kepRaw[".taAtNextNode"] to { // (kep, ta)
+    parameter parKep.
+    parameter parTA.
+
+    local taAN is kepRaw[".taAtRelAsc"](parKep).
+    local dirAN is kepRaw[".posOfTA"](taAN).
+    local dirDN is -dirAN.
+
+    local velNow is kepRaw[".velOfTA"](parTA).
+    if vdot(velNow, dirAN) > 0 { // next node is AN
+      return taAN.
+    } else {
+      return angNorm(taAN+180).
+    }
+  }.
   set kepRaw[".convTA"] to { // (kep, ta)
     parameter parKep.
     parameter parTA.
     return convertOrbitTA(kepRaw["lan"], kepRaw["aop"], parKep["lan"], parKep["aop"], parTA).
+  }.
+  set kepRaw[".dvvAt"] to { // (kep, taOur)
+    parameter parKep.
+    parameter parTA.
+
+    local taNew is kepRaw[".convTA"](parKep, parTA).
+    local velDelta is parKep[".velOfTA"](taNew) - kepRaw[".velOfTA"](parTA).
+    return kepRaw[".dvvFrom"](parTA, velDelta).
   }.
 
   return kepRaw.
@@ -222,36 +284,4 @@ function kepState { // (body, pos, vel)
   local ap is sma * (1+ecc) - parBody:radius.
   local pe is sma * (1-ecc) - parBody:radius.
   return kepAP(parBody, ap, pe, inc, lan, aop).
-}
-
-// ====== Modify the Kep Object ======
-
-// Make an orbit with a TA as one *apsis, and some altitude as another
-function kepModChangeAlt { // (kep, ta, alt)
-  parameter parKep.
-  parameter parTA.
-  parameter parAlt.
-
-  local altBurn is parKep[".altOfTA"](parTA).
-  if (parAlt > altBurn) { // current point will be new periapsis
-    return kepAP(parKep["body"], parAlt, altBurn, parKep["inc"], parKep["lan"],
-      angNorm(parKep["aop"] + parTA) // new aop
-    ).
-  } else {
-    return kepAP(parKep["body"], altBurn, parAlt, parKep["inc"], parKep["lan"],
-      angNorm(parKep["aop"] + parTA + 180) // new aop
-    ).
-  }
-}
-
-// Make an orbit changing inclination at TA
-function kepModChangeInc { // (kep, ta, d-inc)
-  parameter parKep.
-  parameter parTA.
-  parameter parDeltaInc.
-
-  local velBefore is parKep[".velOfTA"](parTA).
-  local velAfter is vrot(velBefore, parKep[".posOfTA"](parTA), -parDeltaInc).
-
-  return kepState(parKep["body"], parKep[".posOfTA"](parTA), velAfter).
 }

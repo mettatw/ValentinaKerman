@@ -13,35 +13,13 @@
 // ***************************************************************************
 @lazyglobal off.
 
+
 runoncepath("lib/kep").
 
-function getNode {
-  if hasnode {
-    return nextnode.
-  } else {
-    return node(time:seconds+3, 0, 0, 0).
-  }
-}
-
-function combineNode {
-  if allnodes:length < 2 { return 0. }.
-  local nd1 is allnodes[0].
-  local nd2 is allnodes[1].
-  if abs(nd1:eta - nd2:eta) > 10 { return 0. }.
-  local ndNew is node(time:seconds + nd1:eta, 0, 0, 0).
-  set ndNew:prograde to nd1:prograde + nd2:prograde.
-  set ndNew:normal to nd1:normal + nd2:normal.
-  set ndNew:radialout to nd1:radialout + nd2:radialout.
-  remove nd1.
-  remove nd2.
-  add ndNew.
-}
-
-function makeNode { // (ta, radialout, normal, prograde, [round=0])
+// Create a node based on radialout,normal,prograde value
+function makeNode { // (ta, V(radialout,normal,prograde), [round=0])
   parameter parTA.
-  parameter parRadialOut.
-  parameter parNormal.
-  parameter parPrograde.
+  parameter parDvv.
   parameter parRound is 0.
 
   // Find the time to burn point
@@ -49,9 +27,10 @@ function makeNode { // (ta, radialout, normal, prograde, [round=0])
   local taNow is ship:orbit:trueanomaly.
   local timeToBurn is time:seconds + kepShip[".timeThruTA"](taNow, parTA) + parRound*kepShip["period"].
 
-  return node(timeToBurn, parRadialOut, parNormal, parPrograde).
+  return node(timeToBurn, parDvv:x, parDvv:y, parDvv:z).
 }
 
+// Create a node based on world vector
 function makeNodeFromVec { // (ta, vec, [round=0])
   parameter parTA.
   parameter parVec.
@@ -69,13 +48,4 @@ function makeNodeFromVec { // (ta, vec, [round=0])
   local axisRadialOut is -vcrs(axisPrograde, axisNormal).
 
   return node(timeToBurn, vdot(parVec, axisRadialOut), vdot(parVec, axisNormal), vdot(parVec, axisPrograde)).
-}
-
-function addNode {
-  parameter parNode.
-  add parNode.
-  print "new node dv=" + round(parNode:deltav:mag, 2) + " ("
-    + round(parNode:radialout, 2) + ", "
-    + round(parNode:normal, 2) + ", "
-    + round(parNode:prograde, 2) + ")".
 }
