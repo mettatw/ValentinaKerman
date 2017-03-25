@@ -1,6 +1,8 @@
 // Execute node script
 @lazyglobal off.
 
+runoncepath("sub/node").
+
 function mainLoopRoot {
   parameter parLexProgram. // an lexicon of number -> [desc, func]
 
@@ -54,7 +56,12 @@ function addRMStdManu { // (lex, num, desc, maneuver-method, plan-func)
   parameter parMethod. // 0=wait, 1=warp
   parameter parFunc.
 
-  set parLexProgram[parStartNum] to list("Plan " + parDesc, parFunc).
+  set parLexProgram[parStartNum] to list("Plan " + parDesc, {
+    local rslt is parFunc().
+    if rslt:istype("Lexicon") and rslt:haskey("ut") {
+      addManu(rslt).
+    }
+  }).
   set parLexProgram[parStartNum+10] to list("Exec " + parDesc, {
     if not hasnode {
       set ship:rootpart:tag to parStartNum:tostring.

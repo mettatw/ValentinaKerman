@@ -223,15 +223,19 @@ function __kepAddSuffix {
     local vecANDir is vcrs(plane1, plane2).
     return kepRaw[".taOfPos"](vecANDir).
   }.
-  set kepRaw[".taAtNextNode"] to { // (kep, ta)
+  set kepRaw[".taAtNextNode"] to { // (kep, ta, [reverse=0])
     parameter parKep.
     parameter parTA.
+    parameter parReverse is 0. // if want last node instead, pass in -1
 
     local taAN is kepRaw[".taAtRelAsc"](parKep).
     local dirAN is kepRaw[".posOfTA"](taAN).
     local dirDN is -dirAN.
 
     local velNow is kepRaw[".velOfTA"](parTA).
+    if parReverse = -1 {
+      set taAN to angNorm(taAN+180).
+    }
     if vdot(velNow, dirAN) > 0 { // next node is AN
       return taAN.
     } else {

@@ -56,7 +56,7 @@ function kepModChangeAlt { // (ta, [alt=current], [kep])
     ).
   }
 }
-function getManuChangeAltitude { // (ta, [alt=current], [kep], [taNow], [round=0])
+function getManuChangeAlt { // (ta, [alt=current], [kep], [taNow], [round=0])
   parameter parTA. // True anomaly at burn point
   parameter parAlt is -1.
   parameter parKep is -1.
@@ -166,28 +166,61 @@ function getManuMatchInc { // (kep2, [kep], [taNow], [round=0])
   }
 }
 
-//function planMatchAltitude { // (kep, ta, [alt=-1]) NOTE: ta is target orbit ta, not ours
-//  parameter parKep.
-//  parameter parTATarget.
-//  parameter parAltitude is -1. // not specified = compute from target orbit
-//
-//  local kepShip is kepKSP(ship:orbit).
-//  local taNow is ship:orbit:trueanomaly.
-//
-//  if parAltitude = -1 {
-//    set parAltitude to parKep[".altOfTA"](parTATarget).
-//  }
-//
-//  planChangeAltitude(parKep[".convTA"](kepShip, 180+parTATarget), parAltitude).
-//}
-//
-//function planMatchOrbit { // (kep, taOur) no check whether actually touch orbit
-//  parameter parKep.
-//  parameter parTATarget.
-//
-//  local kepShip is kepKSP(ship:orbit).
-//  local taOur is parKep[".convTA"](kepShip, parTATarget).
-//  local velTheir is parKep[".velOfTA"](parTATarget).
-//  local velOur is kepShip[".velOfTA"](taOur).
-//  addNode(makeNodeFromVec(parTA, velTheir-velOur)).
-//}
+function kepModMatchAlt { // (kep2, ta, [kep])
+  parameter parKepTarget.
+  parameter parTATarget.
+  parameter parKep is -1.
+
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
+
+  local altBurn is parKepTarget[".altOfTA"](parTATarget).
+  local taOur is parKepTarget[".convTA"](parKep, 180+parTATarget).
+  return kepModChangeAlt(taOur, altBurn, parKep).
+}
+function getManuMatchAlt { // (kep2, ta, [kep], [taNow], [round=0])
+  parameter parKepTarget.
+  parameter parTATarget. // special value: can also be string "AN/DN"
+  parameter parKep is -1.
+  parameter parTANow is -1. // Our True anomaly now
+  parameter parRound is 0.
+
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
+  if parTANow = -1 {
+    set parTANow to ship:orbit:trueanomaly.
+  }
+  
+  if parTATarget = "AN/DN" {
+    set parTATarget to parKep[".convTA"](parKepTarget, parKep[".taAtNextNode"](kepTarget, parTANow, -1)).
+  }
+
+  local taOur is parKepTarget[".convTA"](parKep, 180+parTATarget).
+  local dvvBurn is parKep[".dvvAt"](kepModMatchAlt(parKepTarget, parTATarget, parKep), taOur).
+  return manuTaDvv(parKep, parTANow, taOur, dvvBurn, parRound).
+}
+
+function getManuMatchOrbit { // (kep2, ta, [kep], [taNow], [round=0])
+  parameter parKepTarget.
+  parameter parTATarget. // special value: can also be string "AN/DN"
+  parameter parKep is -1.
+  parameter parTANow is -1. // Our True anomaly now
+  parameter parRound is 0.
+
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
+  if parTANow = -1 {
+    set parTANow to ship:orbit:trueanomaly.
+  }
+  
+  if parTATarget = "AN/DN" {
+    set parTATarget to parKep[".convTA"](parKepTarget, parKep[".taAtNextNode"](kepTarget, parTANow)).
+  }
+
+  local taOur is parKepTarget[".convTA"](parKep, parTATarget).
+  local dvvBurn is parKep[".dvvAt"](parKepTarget, taOur).
+  return manuTaDvv(parKep, parTANow, taOur, dvvBurn, parRound).
+}
