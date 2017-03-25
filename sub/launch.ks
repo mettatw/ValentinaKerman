@@ -3,6 +3,7 @@
 runoncepath("sub/node").
 runoncepath("lib/maneuver").
 runoncepath("lib/ship").
+runoncepath("sub/ship").
 
 // Basic launch + gravity turn
 function doLaunchAndGravityTurn {
@@ -232,6 +233,31 @@ function doLaunchAndGravityTurn {
   set ship:control:pilotmainthrottle to 0.
   unlock steering.
 
-  addManu(getManuChangeAltitude(180)). // circularization maneuver node
+  addManu(getManuChangeAlt(180)). // circularization maneuver node
 }
 
+// Basic unpowered parachute atmospheric reentry
+function doReentryChute {
+  parameter parAllowStage is true.
+
+  wait until ship:altitude < body:atm:height.
+  lock steering to -ship:velocity:surface.
+
+  wait until vang(ship:facing:vector, -ship:velocity:surface) < 15.
+
+  if ship:availablethrust > 0 { // still some power left
+    set ship:control:pilotmainthrottle to 1.
+    wait until ship:availablethrust <= 0 or ship:velocity:surface:mag < 800.
+    set ship:control:pilotmainthrottle to 0.
+    if parAllowStage {
+      stage.
+    }
+  }
+
+  wait until ship:altitude < ship:geoposition:terrainheight+4000.
+  unlock steering.
+  deployChute("CHUTEDROGUE").
+
+  wait until ship:altitude < ship:geoposition:terrainheight+2000.
+  deployChute("CHUTENORMAL").
+}

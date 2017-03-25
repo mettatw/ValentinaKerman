@@ -38,3 +38,24 @@ function activateCPU { // activate inactive CPU by tag
   wait 3.
   listParts[0]:getmodule("kOSProcessor"):doevent("toggle power").
 }
+
+function killWarp { // wait until warp stops
+  set kuniverse:timewarp:warp to 0.
+  // ship:unpacked is suggested here: https://github.com/KSP-KOS/KOS/issues/1790
+  wait until ship:unpacked and kuniverse:timewarp:warp = 0.
+}
+
+function deployChute {
+  parameter parTag.
+
+  local p is 0.
+  local m is 0.
+  for p in ship:partsdubbed(parTag) {
+    for m in p:modules {
+      if m = "RealChuteModule" {
+        p:getmodule(m):doevent("deploy chute").
+        break.
+      }
+    }
+  }
+}
