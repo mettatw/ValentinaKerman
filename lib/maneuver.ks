@@ -195,7 +195,7 @@ function getManuMatchAlt { // (kep2, ta, [kep], [taNow], [round=0])
   }
   
   if parTATarget = "AN/DN" {
-    set parTATarget to parKep[".convTA"](parKepTarget, parKep[".taAtNextNode"](kepTarget, parTANow, -1)).
+    set parTATarget to parKep[".convTA"](parKepTarget, parKep[".taAtNextNode"](parKepTarget, parTANow, -1)).
   }
 
   local taOur is parKepTarget[".convTA"](parKep, 180+parTATarget).
@@ -217,7 +217,7 @@ function getManuMatchOrbit { // (kep2, ta, [kep], [taNow], [round=0])
     set parTANow to ship:orbit:trueanomaly.
   }
   if parTATarget = "AN/DN" {
-    set parTATarget to parKep[".convTA"](parKepTarget, parKep[".taAtNextNode"](kepTarget, parTANow)).
+    set parTATarget to parKep[".convTA"](parKepTarget, parKep[".taAtNextNode"](parKepTarget, parTANow)).
   }
 
   local taOur is parKepTarget[".convTA"](parKep, parTATarget).
@@ -240,7 +240,7 @@ function getManuCorrectionOrbit { // (kep2, ta2, [kep], [taNow])
     set parTANow to ship:orbit:trueanomaly.
   }
   if parTATarget = "AN/DN" {
-    set parTATarget to parKep[".convTA"](parKepTarget, parKep[".taAtNextNode"](kepTarget, parTANow)).
+    set parTATarget to parKep[".convTA"](parKepTarget, parKep[".taAtNextNode"](parKepTarget, parTANow)).
   }
 
   // Do the correction 3 minutes later
@@ -255,5 +255,5 @@ function getManuCorrectionOrbit { // (kep2, ta2, [kep], [taNow])
 
   local velpqwStart is parKep[".velpqwOfTA"](taBurn).
   local path is solveLambertLBPrograde(velpqwStart, pqwStart, pqwEnd, dt, parKep["mu"]).
-  return manuTaDvv(parKep, parTANow, taBurn, kepShip[".dvvFromPqw"](taBurn, path[0] - velpqwStart)).
+  return manuTaDvv(parKep, parTANow, taBurn, parKep[".dvvFromPqw"](taBurn, path[0] - velpqwStart)).
 }

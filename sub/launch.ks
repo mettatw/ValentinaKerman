@@ -30,7 +30,7 @@ function doLaunchAndGravityTurn {
     // arbitrary chosen, may not work somewhere...
     set spdTurnBegin to body:atm:sealevelpressure / 4.
     set presAt45 to body:atm:sealevelpressure / 5.
-    set presAt0 to body:atm:sealevelpressure / 3000.
+    set presAt0 to body:atm:sealevelpressure / 3200.
     ship:sensors:pres. // refuse to launch if no pressure sensor and inside atmosphere
   }
 
@@ -41,7 +41,7 @@ function doLaunchAndGravityTurn {
     return eta:apoapsis - 40.
   }
 
-  print "----> LAUNCH alt=" + round(parHeight/1000, 1) + "km".
+  print "----> LAUNCH alt=" + round(parHeight/1000, 2) + "km".
 
   set ship:control:pilotmainthrottle to 1.
   sas off.

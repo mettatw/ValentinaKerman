@@ -28,6 +28,11 @@ function getNode {
 }
 
 // Add node and show message
+function addEmptyNode { // ()
+  waitActive().
+  add node(time:seconds + 30, 0, 0, 0).
+  print "new empty node added".
+}
 function addNode { // (node)
   parameter parNode.
   waitActive().
@@ -65,7 +70,9 @@ function runNode {
     set parNode to getNode().
   }
 
-  if parNode:deltav:mag = 0 {
+  if parNode:deltav:mag <= 0.1 {
+    print "Skipping empty node.".
+    remove parNode.
     return.
   }
 

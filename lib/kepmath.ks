@@ -215,7 +215,7 @@ function convertOrbitTA { // (lan1, aop1, lan2, aop2, ta)
   parameter parAopDest.
   parameter parTA.
 
-  return parTA + (parAopSrc - parAopDest) + (parLanSrc - parLanDest).
+  return angNorm(parTA + (parAopSrc - parAopDest) + (parLanSrc - parLanDest)).
 }
 
 

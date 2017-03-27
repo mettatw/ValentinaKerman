@@ -6,3 +6,4 @@ runoncepath("sub/launch").
 runoncepath("sub/node").
 runoncepath("sub/ship").
 runoncepath("sub/runmode").
+runoncepath("sub/mission").

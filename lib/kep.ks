@@ -276,6 +276,19 @@ function __kepAddSuffix {
   set kepRaw[".convTA"] to { // (kep, ta)
     parameter parKep.
     parameter parTA.
+    // some symptons that our orbit are hand-written, without some very important cues
+    if (parKep["inc"] < 0.5 and parKep["lan"] = 0) or (kepRaw["inc"] < 0.5 and kepRaw["lan"] = 0)
+    or (parKep["ecc"] < 0.1 and parKep["aop"] = 0) or (kepRaw["ecc"] < 0.1 and kepRaw["aop"] = 0) {
+      if kepRaw[".relInc"](parKep) < 0.05 { // in this case, direct position angle should work
+        return parKep[".taOfPos"](kepRaw[".posOfTA"](parTA)).
+      } else { // too much inclination difference, use AN node as proxy
+        local taOurAN is kepRaw[".taAtRelAsc"](parKep).
+        local taTheirDN is angNorm(parKep[".taAtRelAsc"](kepRaw)+180).
+        return angNorm(parTA - taOurAN + taTheirDN).
+      }
+    }
+
+    // Orbit seem to be legit, use normal approach
     return convertOrbitTA(kepRaw["lan"], kepRaw["aop"], parKep["lan"], parKep["aop"], parTA).
   }.
   set kepRaw[".dvvAt"] to { // (kep, taOur)
