@@ -58,6 +58,12 @@ function doLaunchAndGravityTurn {
   // Pitch control, setpoint is dETA=0, output is dPitch
   local pidInvPitch is pidLoop(0.3, 0, 0.05, -10, 10).
   set pidInvPitch:setpoint to 0.
+  // Pitch control 2, setpoint is dETA=0, output is dPitchBaseline
+  local pidInvPitch2 is pidLoop(0.01, 0, 0.1, -1, 1).
+  set pidInvPitch2:setpoint to 0.
+
+  // Common variables for phase 2 and 3
+  local angleBaseline is 90. // What angle to add/sub deltas from. This is the deviation from up vector
 
   // Main control loop
   local runMode is 1.
@@ -80,8 +86,7 @@ function doLaunchAndGravityTurn {
       }
     }
 
-    // Common variables for phase 2 and 3
-    local angleBaseline is 90. // What angle to add/sub deltas from. This is the deviation from up vector
+    // Common variables for phase 2~4
     local minThrottle is 1. // Minimum possible thrust
     local maxAngle is 90.
     local dAngleMultiplier is 1.
@@ -105,6 +110,10 @@ function doLaunchAndGravityTurn {
       }
     }
 
+    // Common variables for 3~4
+    local minBaseline is 45.
+    local maxBaseline is 88.
+
     // 3: turn to 0 degree before specified altitude
     if runMode = 3 {
       if (not body:atm:exists and ship:altitude >= altAt0) or (body:atm:exists and ship:sensors:pres <= presAt0) {
@@ -112,13 +121,16 @@ function doLaunchAndGravityTurn {
         set runMode to 4.
       } else {
         if body:atm:exists {
-          // Weird exponential function for scaling angle to pressure
           set maxAngle to 88.
-          set angleBaseline to 45 + 43* // when in atmo, don't go fully horizontal, for extra safety
+        }
+
+        if body:atm:exists {
+          // Weird exponential function for scaling angle to pressure
+          set maxBaseline to 45 + 43* // when in atmo, don't go fully horizontal, for extra safety
             (constant:e^(30*(ship:sensors:pres-presAt45)/(presAt0-presAt45))-1)/(constant:e^30-1)
           .
         } else {
-          set angleBaseline to 45 + 45*(ship:altitude - altAt45)/(altAt0 - altAt45).
+          set maxBaseline to 45 + 45*(ship:altitude - altAt45)/(altAt0 - altAt45).
         }
         set minThrottle to 0.5.
       }
@@ -132,9 +144,9 @@ function doLaunchAndGravityTurn {
       } else {
         if body:atm:exists {
           set maxAngle to 88.
-          set angleBaseline to 88.
+          set maxBaseline to 88.
         } else {
-          set angleBaseline to 90.
+          set maxBaseline to 90.
         }
 
         set minThrottle to 0.1.
@@ -179,6 +191,12 @@ function doLaunchAndGravityTurn {
         set ship:control:pilotmainthrottle to max(minThrottle, ship:control:pilotmainthrottle).
       }
 
+      if runMode >= 3 { // baseline angle control
+        set angleBaseline to angleBaseline - pidInvPitch2:update(time:seconds, dETA).
+        set angleBaseline to min(maxBaseline, angleBaseline).
+        set angleBaseline to max(minBaseline, angleBaseline).
+      }
+
       // Steering control
       local angleSteer is angleBaseline.
       local angleDelta is -pidInvPitch:update(time:seconds, dETA).
@@ -187,10 +205,8 @@ function doLaunchAndGravityTurn {
       } else {
         set angleSteer to angleBaseline + dAngleMultiplier * angleDelta*2.
       }
-      if runMode = 3 and dETA < -20 { // for safety
-        set angleSteer to max(0, angleSteer + (dETA+20)*2).
-      } else if runMode >= 4 and dETA < -10 {
-        set angleSteer to max(0, angleSteer + (dETA+10)*2).
+      if runMode >= 3 and dETA < -10 { // for safety
+        set angleSteer to max(0, angleSteer + (dETA+10)*1.5).
       }
       set angleSteer to min(maxAngle, angleSteer).
       set angleSteer to max(0, angleSteer).
