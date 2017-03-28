@@ -260,10 +260,10 @@ function __kepAddSuffix {
     parameter parReverse is 0. // if want last node instead, pass in -1
 
     local taAN is kepRaw[".taAtRelAsc"](parKep).
-    local dirAN is kepRaw[".posOfTA"](taAN).
+    local dirAN is kepRaw[".pqwOfTA"](taAN).
     local dirDN is -dirAN.
 
-    local velNow is kepRaw[".velOfTA"](parTA).
+    local velNow is kepRaw[".velpqwOfTA"](parTA).
     if parReverse = -1 {
       set taAN to angNorm(taAN+180).
     }
