@@ -260,10 +260,10 @@ function __kepAddSuffix {
     parameter parReverse is 0. // if want last node instead, pass in -1
 
     local taAN is kepRaw[".taAtRelAsc"](parKep).
-    local dirAN is kepRaw[".posOfTA"](taAN).
+    local dirAN is kepRaw[".pqwOfTA"](taAN).
     local dirDN is -dirAN.
 
-    local velNow is kepRaw[".velOfTA"](parTA).
+    local velNow is kepRaw[".velpqwOfTA"](parTA).
     if parReverse = -1 {
       set taAN to angNorm(taAN+180).
     }
@@ -276,7 +276,7 @@ function __kepAddSuffix {
   set kepRaw[".convTA"] to { // (kep, ta)
     parameter parKep.
     parameter parTA.
-    // some symptons that our orbit are hand-written, without some very important cues
+    // some symptons that our orbit are hand-written, without very important aop and lan known
     if (parKep["inc"] < 0.5 and parKep["lan"] = 0) or (kepRaw["inc"] < 0.5 and kepRaw["lan"] = 0)
     or (parKep["ecc"] < 0.1 and parKep["aop"] = 0) or (kepRaw["ecc"] < 0.1 and kepRaw["aop"] = 0) {
       if kepRaw[".relInc"](parKep) < 0.05 { // in this case, direct position angle should work
@@ -291,6 +291,11 @@ function __kepAddSuffix {
     // Orbit seem to be legit, use normal approach
     return convertOrbitTA(kepRaw["lan"], kepRaw["aop"], parKep["lan"], parKep["aop"], parTA).
   }.
+  set kepRaw[".convPqw"] to { // (kep, pqw)
+    parameter parKep.
+    parameter parPqw.
+    return parKep[".pqwFrom"](kepRaw[".pqwTo"](parPqw)).
+  }
   set kepRaw[".dvvAt"] to { // (kep, taOur)
     parameter parKep.
     parameter parTA.

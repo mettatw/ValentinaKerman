@@ -104,10 +104,10 @@ function getManuChangeInc { // (ta, dinc, [kep], [taNow], [round=0])
   }
 
   // Not using the kep object here, just compute the appropriate velocity change
-  local velBefore is parKep[".velOfTA"](parTA).
-  local velAfter is vrot(velBefore, parKep[".posOfTA"](parTA), -parDeltaInc).
+  local velBefore is parKep[".velpqwOfTA"](parTA).
+  local velAfter is vrot(velBefore, parKep[".pqwOfTA"](parTA), -parDeltaInc).
 
-  local dvvBurn is parKep[".dvvFrom"](parTA, velAfter-velBefore).
+  local dvvBurn is parKep[".dvvFromPqw"](parTA, velAfter-velBefore).
 
   return manuTaDvv(parKep, parTANow, parTA, dvvBurn, parRound).
 }
