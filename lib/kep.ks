@@ -83,9 +83,11 @@ function kepKSP { // (orbit, patch)
   local rslt is lexicon("body", bodyParent, "inc", parOrbit:inclination,
     "lan", parOrbit:lan, "aop", parOrbit:argumentofperiapsis,
     "ap", apReal, "pe", peReal,
-    "sma", parOrbit:semimajoraxis, "ecc", parOrbit:eccentricity,
-    "period", parOrbit:period
+    "sma", parOrbit:semimajoraxis, "ecc", parOrbit:eccentricity
   ).
+  if apReal > 0 {
+    set rslt["period"] to parOrbit:period.
+  }
   return __kepAddSuffix(rslt).
 }
 
@@ -107,7 +109,11 @@ function __kepAddSuffix {
     set kepRaw["sma"] to (kepRaw["ap"] + kepRaw["pe"])/2.
   }
   if not kepRaw:haskey("period") and kepRaw:haskey("sma") {
-    set kepRaw["period"] to 2 * constant:pi * sqrt(kepRaw["sma"]^3 / kepRaw["mu"]).
+    if kepRaw["ap"] > 0 {
+      set kepRaw["period"] to 2 * constant:pi * sqrt(kepRaw["sma"]^3 / kepRaw["mu"]).
+    } else {
+      set kepRaw["period"] to 0.
+    }
   }
 
   // coordinates. PQW=perifocal (peri, 90-deg, plane) DVV=DeltaV (radialout,normal,prograde)
@@ -295,7 +301,7 @@ function __kepAddSuffix {
     parameter parKep.
     parameter parPqw.
     return parKep[".pqwFrom"](kepRaw[".pqwTo"](parPqw)).
-  }
+  }.
   set kepRaw[".dvvAt"] to { // (kep, taOur)
     parameter parKep.
     parameter parTA.
