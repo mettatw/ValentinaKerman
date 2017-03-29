@@ -15,6 +15,7 @@
 
 runoncepath("lib/kep").
 runoncepath("lib/lambert").
+runoncepath("lib/opti").
 
 // ====== The maneuver object ======
 

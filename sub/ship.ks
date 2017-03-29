@@ -19,13 +19,6 @@ function doPartTesting { // (tag)
   ship:partsdubbed(parTag)[0]:getmodule("ModuleTestSubject"):doevent("Run Test").
 }
 
-function waitActive { // wait cpu vessel became active one
-  if ship <> kuniverse:activevessel {
-    print "Waiting until we became the active vessel...".
-    wait until ship <> kuniverse:activevessel.
-  }
-}
-
 function activateCPU { // activate inactive CPU by tag
   parameter parTag.
 
@@ -39,13 +32,7 @@ function activateCPU { // activate inactive CPU by tag
   listParts[0]:getmodule("kOSProcessor"):doevent("toggle power").
 }
 
-function killWarp { // wait until warp stops
-  set kuniverse:timewarp:warp to 0.
-  // ship:unpacked is suggested here: https://github.com/KSP-KOS/KOS/issues/1790
-  wait until ship:unpacked and kuniverse:timewarp:warp = 0.
-}
-
-function deployChute {
+function deployChute { // (tag)
   parameter parTag.
 
   local p is 0.
@@ -57,5 +44,34 @@ function deployChute {
         break.
       }
     }
+  }
+}
+
+// ====== Engine burns ======
+
+function deOrbitNow { // (peri)
+  parameter parPeri.
+  waitActive().
+  lock steering to -ship:velocity:orbit.
+  wait until vang(ship:facing:vector, -ship:velocity:orbit) < 10.
+
+  set ship:control:pilotmainthrottle to 1.
+  wait until ship:orbit:periapsis <= parPeri.
+  set ship:control:pilotmainthrottle to 0.
+  unlock steering.
+}
+
+// ====== 4-th wall ======
+
+function killWarp { // wait until warp stops
+  set kuniverse:timewarp:warp to 0.
+  // ship:unpacked is suggested here: https://github.com/KSP-KOS/KOS/issues/1790
+  wait until ship:unpacked and kuniverse:timewarp:warp = 0.
+}
+
+function waitActive { // wait cpu vessel became active one
+  if ship <> kuniverse:activevessel {
+    print "Waiting until we became the active vessel...".
+    wait until ship <> kuniverse:activevessel.
   }
 }

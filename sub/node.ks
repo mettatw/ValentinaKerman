@@ -109,16 +109,17 @@ function runNode {
     }
   } else if parMode = 0 { // WAIT mode, will warp the last 5 minute
     print "wait mode, you may set alarm to T-5 min".
-    wait until parNode:eta <= tBefore + 300.
-    if parNode:eta < tBefore+300 and parNode:eta > tBefore+30 {
-      set kuniverse:timewarp:mode to "RAILS".
-      kuniverse:timewarp:warpto(time:seconds + parNode:eta - (tBefore+30)).
-    }
+  }
+
+  // Warp the final 5 min no matter what
+  wait until parNode:eta <= tBefore + 300.
+  if parNode:eta < tBefore+300 and parNode:eta > tBefore+30 {
+    set kuniverse:timewarp:mode to "RAILS".
+    kuniverse:timewarp:warpto(time:seconds + parNode:eta - (tBefore+30)).
   }
 
   // make sure we kill any remaining time warp
-  wait until parNode:eta <= tBefore + 30 or
-    (kuniverse:timewarp:rate >= 100 and parNode:eta <= tBefore + 60).
+  wait until parNode:eta <= tBefore + 30.
   set kuniverse:timewarp:warp to 0.
   wait until parNode:eta <= tBefore.
 
