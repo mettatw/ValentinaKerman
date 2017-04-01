@@ -129,6 +129,9 @@ function doLaunchAndGravityTurn {
           set maxBaseline to 45 + 43* // when in atmo, don't go fully horizontal, for extra safety
             (constant:e^(30*(ship:sensors:pres-presAt45)/(presAt0-presAt45))-1)/(constant:e^30-1)
           .
+          local anglePrograde is vang(-body:position, ship:velocity:surface).
+          set maxBaseline to min(anglePrograde, maxBaseline).
+          set maxBaseline to max(minBaseline, maxBaseline).
         } else {
           set maxBaseline to 45 + 45*(ship:altitude - altAt45)/(altAt0 - altAt45).
         }
