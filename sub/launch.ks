@@ -270,10 +270,12 @@ function doReentryChute {
     }
   }
 
-  wait until ship:altitude < ship:geoposition:terrainheight+4000.
+  wait until ship:altitude < ship:geoposition:terrainheight+4000 or ship:altitude < 4000.
   unlock steering.
   deployChute("CHUTEDROGUE").
+  deployChute("DROGUE").
 
-  wait until ship:altitude < ship:geoposition:terrainheight+2000.
+  wait until ship:altitude < ship:geoposition:terrainheight+2000 or ship:altitude < 2000.
   deployChute("CHUTENORMAL").
+  deployChute("CHUTE").
 }
