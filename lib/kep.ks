@@ -283,8 +283,7 @@ function __kepAddSuffix {
     parameter parKep.
     parameter parTA.
     // some symptons that our orbit are hand-written, without very important aop and lan known
-    if (parKep["inc"] < 0.5 and parKep["lan"] = 0) or (kepRaw["inc"] < 0.5 and kepRaw["lan"] = 0)
-    or (parKep["ecc"] < 0.1 and parKep["aop"] = 0) or (kepRaw["ecc"] < 0.1 and kepRaw["aop"] = 0) {
+    if parKep["lan"] = 0 or kepRaw["lan"] = 0 or parKep["aop"] = 0 or kepRaw["aop"] = 0 {
       if kepRaw[".relInc"](parKep) < 0.05 { // in this case, direct position angle should work
         return parKep[".taOfPos"](kepRaw[".posOfTA"](parTA)).
       } else { // too much inclination difference, use AN node as proxy

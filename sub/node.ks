@@ -118,6 +118,13 @@ function runNode {
     kuniverse:timewarp:warpto(time:seconds + parNode:eta - (tBefore+30)).
   }
 
+  // Warp the final 2 min after alarm clock
+  wait until parNode:eta <= tBefore + 120.
+  if parNode:eta < tBefore+120 and parNode:eta > tBefore+30 {
+    set kuniverse:timewarp:mode to "RAILS".
+    kuniverse:timewarp:warpto(time:seconds + parNode:eta - (tBefore+30)).
+  }
+
   // make sure we kill any remaining time warp
   wait until parNode:eta <= tBefore + 30.
   set kuniverse:timewarp:warp to 0.
