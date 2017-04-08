@@ -206,19 +206,6 @@ function getOrbitTAAfterTime { // (period, ecc, ta, delta-time)
   return getOrbitTAFromMA(parEcc, ma2).
 }
 
-// Convert TA in one orbit into another
-// Only meaningful on small inclination difference
-function convertOrbitTA { // (lan1, aop1, lan2, aop2, ta)
-  parameter parLanSrc.
-  parameter parAopSrc.
-  parameter parLanDest.
-  parameter parAopDest.
-  parameter parTA.
-
-  return angNorm(parTA + (parAopSrc - parAopDest) + (parLanSrc - parLanDest)).
-}
-
-
 // ====== Simple Calculations ======
 
 // Find SMA according to period and gravitational constant
