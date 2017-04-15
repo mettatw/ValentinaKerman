@@ -113,19 +113,37 @@ function getManuChangeInc { // (ta, dinc, [kep], [taNow], [round=0])
   return manuTaDvv(parKep, parTANow, parTA, dvvBurn, parRound).
 }
 
+function kepModChangePeriod { // (ta, period, [kep])
+  parameter parTA.
+  parameter parPeriod.
+  parameter parKep is -1.
 
-// Just a convenient warpper around planChangeAltitude
-//function planChangePeriod { // (ta, period)
-//  parameter parTA. // True anomaly at burn point, 0 for periapsis
-//  parameter parPeriod.
-//
-//  local kepShip is kepKSP(ship:orbit).
-//  local smaNew is getOrbitSMAFromPeriod(kepShip["mu"], parPeriod).
-//  local radiusHere is kepShip[".rOfTA"](parTA).
-//
-//  local radiusThere is smaNew*2 - radiusHere.
-//  planChangeAltitude(parTA, radiusThere - kepShip["brad"]).
-//}
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
+
+  local smaNew is getOrbitSMAFromPeriod(parKep["mu"], parPeriod).
+  local radiusHere is parKep[".rOfTA"](parTA).
+  local radiusThere is smaNew*2 - radiusHere.
+
+  return kepModChangeAlt(parTA, radiusThere-parKep["brad"], parKep).
+}
+function getManuChangePeriod { // (ta, period, [kep], [taNow], [round=0])
+  parameter parTA. // True anomaly at burn point
+  parameter parPeriod.
+  parameter parKep is -1.
+  parameter parTANow is -1. // True anomaly now
+  parameter parRound is 0.
+
+  if parKep = -1 {
+    set parKep to kepKSP(ship:orbit).
+  }
+  if parTANow = -1 {
+    set parTANow to ship:orbit:trueanomaly.
+  }
+  local dvvBurn is parKep[".dvvAt"](kepModChangePeriod(parTA, parPeriod, parKep), parTA).
+  return manuTaDvv(parKep, parTANow, parTA, dvvBurn, parRound).
+}
 
 // ====== Based on other orbit ======
 
@@ -162,9 +180,9 @@ function getManuMatchInc { // (kep2, [kep], [taNow], [round=0])
   local taNode is parKep[".taAtNextNode"](parKepTarget, parTANow).
 
   if abs(taAN - taNode) < 1 {
-    return getManuChangeInc(taNode, -relInc, parKep, parTANow, parRound).
-  } else { // at DN
     return getManuChangeInc(taNode, relInc, parKep, parTANow, parRound).
+  } else { // at DN
+    return getManuChangeInc(taNode, -relInc, parKep, parTANow, parRound).
   }
 }
 
@@ -231,6 +249,7 @@ function getManuMatchOrbit { // (kep2, ta, [kep], [taNow], [round=0])
 function getManuCorrectionOrbit { // (kep2, ta2, [kep], [taNow])
   parameter parKepTarget.
   parameter parTATarget. // special value: can also be string "AN/DN"
+  parameter parTABurn is -1.
   parameter parKep is -1.
   parameter parTANow is -1. // Our True anomaly now
 
@@ -243,18 +262,22 @@ function getManuCorrectionOrbit { // (kep2, ta2, [kep], [taNow])
   if parTATarget = "AN/DN" {
     set parTATarget to parKep[".convTA"](parKepTarget, parKep[".taAtNextNode"](parKepTarget, parTANow)).
   }
+  if parTABurn = -1 {
+    // Do the correction 3 minutes later by default
+    set parTABurn to parKep[".taAfterTime"](parTANow, 180).
+  }
 
-  // Do the correction 3 minutes later
-  local taBurn is parKep[".taAfterTime"](parTANow, 180).
+  set parTABurn to angNorm(parTABurn).
+  set parTATarget to angNorm(parTATarget).
 
   local pqwEnd is parKep[".pqwFrom"](parKepTarget[".posOfTA"](parTATarget)).
-  local pqwStart is parKep[".pqwOfTA"](taBurn).
+  local pqwStart is parKep[".pqwOfTA"](parTABurn).
   // Assume time is approximately proportional to straight-line distance
   local taTargetOur is parKepTarget[".convTA"](parKep, parTATarget).
-  local dt is parKep[".timeThruTA"](taBurn, taTargetOur)
+  local dt is parKep[".timeThruTA"](parTABurn, taTargetOur)
     / (parKep[".pqwOfTA"](taTargetOur) - pqwStart):mag * (pqwEnd - pqwStart):mag.
 
-  local velpqwStart is parKep[".velpqwOfTA"](taBurn).
+  local velpqwStart is parKep[".velpqwOfTA"](parTABurn).
   local path is solveLambertLBPrograde(velpqwStart, pqwStart, pqwEnd, dt, parKep["mu"]).
-  return manuTaDvv(parKep, parTANow, taBurn, parKep[".dvvFromPqw"](taBurn, path[0] - velpqwStart)).
+  return manuTaDvv(parKep, parTANow, parTABurn, parKep[".dvvFromPqw"](parTABurn, path[0] - velpqwStart)).
 }
