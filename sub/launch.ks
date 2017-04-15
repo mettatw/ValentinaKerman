@@ -30,7 +30,7 @@ function doLaunchAndGravityTurn {
     // arbitrary chosen, may not work somewhere...
     set spdTurnBegin to body:atm:sealevelpressure / 4.
     set presAt45 to body:atm:sealevelpressure / 5.
-    set presAt0 to body:atm:sealevelpressure / 3200.
+    set presAt0 to body:atm:sealevelpressure / 2500.
     ship:sensors:pres. // refuse to launch if no pressure sensor and inside atmosphere
   }
 
@@ -71,7 +71,8 @@ function doLaunchAndGravityTurn {
 
     // shortcut, if already achieved, just end
     if ship:orbit:apoapsis >= parHeight {
-      set runMode to 4.
+      print "Apo reached at alt " + round(ship:altitude/1000,2) + "km".
+      set runMode to 0.
     }
 
     // 1: before gravity turn
@@ -116,45 +117,22 @@ function doLaunchAndGravityTurn {
 
     // 3: turn to 0 degree before specified altitude
     if runMode = 3 {
-      if (not body:atm:exists and ship:altitude >= altAt0) or (body:atm:exists and ship:sensors:pres <= presAt0) {
-        print "0-degree at alt " + round(ship:altitude/1000,2) + "km".
-        set runMode to 4.
+      if body:atm:exists {
+        // Weird exponential function for scaling angle to pressure
+        set maxBaseline to 45 + 43* // when in atmo, don't go fully horizontal, for extra safety
+          (constant:e^(30*(ship:sensors:pres-presAt45)/(presAt0-presAt45))-1)/(constant:e^30-1)
+        .
+        local anglePrograde is vang(-body:position, ship:velocity:surface).
+        set maxBaseline to min(anglePrograde, maxBaseline).
+        set maxBaseline to max(minBaseline, maxBaseline).
       } else {
-        if body:atm:exists {
-          set maxAngle to 88.
-        }
-
-        if body:atm:exists {
-          // Weird exponential function for scaling angle to pressure
-          set maxBaseline to 45 + 43* // when in atmo, don't go fully horizontal, for extra safety
-            (constant:e^(30*(ship:sensors:pres-presAt45)/(presAt0-presAt45))-1)/(constant:e^30-1)
-          .
-          local anglePrograde is vang(-body:position, ship:velocity:surface).
-          set maxBaseline to min(anglePrograde, maxBaseline).
-          set maxBaseline to max(minBaseline, maxBaseline).
-        } else {
-          set maxBaseline to 45 + 45*(ship:altitude - altAt45)/(altAt0 - altAt45).
-        }
+        set maxBaseline to 45 + 45*(ship:altitude - altAt45)/(altAt0 - altAt45).
+      }
+      if (not body:atm:exists and ship:altitude >= altAt0) or (body:atm:exists and ship:sensors:pres <= presAt0) {
+        set minThrottle to 0.2.
+      } else {
         set minThrottle to 0.5.
       }
-    }
-
-    // 4: waiting for apoapsis
-    if runMode = 4 {
-      if ship:orbit:apoapsis >= parHeight {
-        print "Apo reached at alt " + round(ship:altitude/1000,2) + "km".
-        set runMode to 0.
-      } else {
-        if body:atm:exists {
-          set maxAngle to 88.
-          set maxBaseline to 88.
-        } else {
-          set maxBaseline to 90.
-        }
-
-        set minThrottle to 0.1.
-      }
-
     } // end runMode branch
 
     // Staging: out of thrust, or automatic asparagus detection
@@ -204,7 +182,7 @@ function doLaunchAndGravityTurn {
       local angleSteer is angleBaseline.
       local angleDelta is -pidInvPitch:update(time:seconds, dETA).
       if angleDelta > 0 {
-        set angleSteer to angleBaseline + dAngleMultiplier * angleDelta/2.
+        set angleSteer to angleBaseline + dAngleMultiplier * angleDelta.
       } else {
         set angleSteer to angleBaseline + dAngleMultiplier * angleDelta*2.
       }
