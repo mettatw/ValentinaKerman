@@ -63,6 +63,7 @@ function addMakeNode { // (ta, dvv, [round=0])
 function runNode {
   parameter parMode is 0. // 0=just wait, 1=warp
   parameter parNode is 0.
+  parameter parFrontRatio is 0.5.
 
   waitActive().
 
@@ -83,12 +84,9 @@ function runNode {
 
   // how long we need to burn BEFORE the maneuver point
   local eIsp is getEffIsp().
-  local tBefore is getBurnTime(ship:availablethrust, ship:mass, eIsp, parNode:deltav:mag/2).
-  local tFull is getBurnTime(ship:availablethrust, ship:mass, eIsp, parNode:deltav:mag).
-
-  // If the burn is long, we don't need to low thrust at the end
-  // But if the burn is VERY short, it is a better idea to allow lower thrust
-  local minThrust is min(0.3, tFull/2).
+  local dv is parNode:deltav.
+  local tBefore is getBurnTime(ship:availablethrust, ship:mass, eIsp, dv:mag*parFrontRatio).
+  local tFull is getBurnTime(ship:availablethrust, ship:mass, eIsp, dv:mag).
 
   print "----> NODE eISP=" + round(eIsp, 2) + " pre " + round(tBefore, 2) + "s/" + round(tFull, 2) + "s".
   sas off.
@@ -98,8 +96,8 @@ function runNode {
   set ship:control:pilotmainthrottle to 0.
 
   // Pre-turning
-  lock steering to lookdirup(parNode:deltav, ship:facing:topvector).
-  wait until vang(ship:facing:vector, parNode:deltav) < 1.
+  lock steering to lookdirup(dv, ship:facing:topvector).
+  wait until vang(ship:facing:vector, dv) < 1.
 
   print "eta: " + round(parNode:eta, 2) + "s".
   if parMode = 1 { // WARP mode
@@ -131,22 +129,28 @@ function runNode {
   wait until parNode:eta <= tBefore.
 
   // START DOING THE NODE
-  local dv0 to parNode:deltav. // record the original deltaV, mainly for its direction
-
+  set dv to parNode:deltav. // update node, just in case
   local currentThrottle is 1.
   local tStart is time:seconds.
+  local tPrev is time:seconds.
+  local mPrev is ship:mass. // current ship mass
+  local dvDone is 0.
   lock throttle to currentThrottle.
-  until vang(dv0, parNode:deltav) > 20 {
-    local aNow is ship:availablethrust/ship:mass.
+  until dvDone >= dv:mag {
+    local aPrev is ship:availablethrust*currentThrottle/mPrev.
+    local aNow is ship:availablethrust*currentThrottle/ship:mass.
+    set dvDone to dvDone + (time:seconds-tPrev)*((aNow+aPrev)/2).
+
+    set mPrev to ship:mass.
+    set tPrev to time:seconds.
 
     // This is copied from KOS tutorial
-    // throttle is 100% until there is less than 0.5 second of time left to burn
-    // when there is less than 1 second - decrease the throttle linearly
-    // also with arbitrary limit, avoid burn too long being inaccurate
-    set currentThrottle to min(max(minThrust, parNode:deltav:mag/aNow*2), 1).
+    // throttle is 100% until there is less than 0.66 second of time left to burn
+    set currentThrottle to min((dv:mag - dvDone)/aNow*1.5, 1).
+    wait 0.
   }
 
-  print "End burn, dt=" + round(time:seconds-tStart,2) + "s err=" + round(parNode:deltav:mag,1) + "m/s".
+  print "End burn, dt=" + round(time:seconds-tStart,2) + "s err=" + round(dv:mag-dvDone,1) + "m/s".
   set ship:control:pilotmainthrottle to 0.
   set throttle to 0.
   unlock steering.

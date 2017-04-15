@@ -143,3 +143,36 @@ function optiBrentFree { // (func, xmin, xmax, [tol], [guess], [val=identity]) r
   } // end main loop
 
 }
+
+// Powell's method for minimization (unconstrained)
+//function optiPowellFree { // (func(taking a list), xmin(list), xmax(list), [tol], [guess(list)], [val=identity]) return [x(list), fxReal]
+//  parameter parFunc.
+//  parameter parXMin.
+//  parameter parXMax.
+//  parameter parTol is 1e-5.
+//  parameter parXGuess is "guess". // can be "guess" to auto derive
+//  parameter parValFunc is {parameter x. return x.}. // from function result to 1-dim "value", default to identity function
+//
+//  local nDim is parXmin:length.
+//  local cgold is 0.38196601125.
+//  if parXGuess = "guess" {
+//    set parXGuess to list().
+//    from {local d is 0.} until d >= nDim step {set d to d+1.} do {
+//      parXGuess:insert(d, parXMin[d] + cgold*(parXMax[d]-parXMin[d])).
+//    }
+//  }
+//  local x is parXGuess:copy. // point with least function value so far
+//  local fxReal is parFunc(x).  local fx is parValFunc(fxReal).
+//
+//  print "init: "+ x +" => "+ fx.
+//
+//  from {local itr is 1.} until itr > 100 step {set itr to itr+1.} do {
+//    if SOME CONVERGE TEST {
+//      return list(x, fxReal).
+//    }
+//    if itr >= 100 {
+//      print "optiPowellFree: does not seem to converge".
+//      return list(x, fxReal).
+//    }
+//  }
+//}

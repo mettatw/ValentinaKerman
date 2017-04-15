@@ -11,7 +11,7 @@ function buildOneFile {
 
 function doSync {
   local listDirs is list("sub", "lib").
-  local listFiles is list("call.ks", "go.ks", "killnode.ks", "launch.ks", "node.ks").
+  local listFiles is list("call.ks", "go.ks", "killnode.ks", "launch.ks", "node.ks", "node0.ks").
 
   local f is 0.
   for f in listFiles {
