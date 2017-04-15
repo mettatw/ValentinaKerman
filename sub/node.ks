@@ -28,9 +28,13 @@ function getNode {
 }
 
 // Add node and show message
-function addEmptyNode { // ()
+function addEmptyNode { // ([time=now+30])
+  local parTime is -1.
   waitActive().
-  add node(time:seconds + 30, 0, 0, 0).
+  if parTime = -1 {
+    set parTime to time:seconds+30.
+  }
+  add node(parTime, 0.00001, 0, 0).
   print "new empty node added".
 }
 function addNode { // (node)
