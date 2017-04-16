@@ -29,7 +29,7 @@ function getNode {
 
 // Add node and show message
 function addEmptyNode { // ([time=now+30])
-  local parTime is -1.
+  parameter parTime is -1.
   waitActive().
   if parTime = -1 {
     set parTime to time:seconds+30.
@@ -73,12 +73,6 @@ function runNode {
 
   if parNode = 0 {
     set parNode to getNode().
-  }
-
-  if parNode:deltav:mag <= 0.1 {
-    print "Skipping empty node.".
-    remove parNode.
-    return.
   }
 
   if ship:availablethrust = 0 {
@@ -129,6 +123,11 @@ function runNode {
 
   // make sure we kill any remaining time warp
   wait until parNode:eta <= tBefore + 30.
+  if dv:mag <= 0.1 {
+    print "Skipping empty node.".
+    remove parNode.
+    return.
+  }
   set kuniverse:timewarp:warp to 0.
   wait until parNode:eta <= tBefore.
 
