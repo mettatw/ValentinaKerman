@@ -28,13 +28,17 @@ function getNode {
 }
 
 // Add node and show message
-function addEmptyNode { // ([time=now+30])
-  parameter parTime is -1.
+function addWaitNode { // (ta, [round=0])
+  parameter parTA.
+  parameter parRound is 0.
+
+  local nd is makeNode(parTA, V(1e-3, 1e-3, 1e-3), parRound).
+  addNode(nd).
+  print "new clock node added: -" + round(nd:eta, 1) + "s".
+}
+function addEmptyNode { // ()
   waitActive().
-  if parTime = -1 {
-    set parTime to time:seconds+30.
-  }
-  add node(parTime, 0.00001, 0, 0).
+  add node(time:seconds+30, 0.00001, 0, 0).
   print "new empty node added".
 }
 function addNode { // (node)
