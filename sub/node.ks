@@ -98,9 +98,11 @@ function runNode {
   wait until vang(ship:facing:vector, dv) < 1.
 
   print "eta: " + round(parNode:eta, 2) + "s".
+  // Warp a little bit to kill rotation
+  set kuniverse:timewarp:mode to "RAILS".
+  kuniverse:timewarp:warpto(time:seconds + 2).
   if parMode = 1 { // WARP mode
     if parNode:eta > tBefore+30 {
-      set kuniverse:timewarp:mode to "RAILS".
       kuniverse:timewarp:warpto(time:seconds + parNode:eta - (tBefore+30)).
     }
   } else if parMode = 0 { // WAIT mode, will warp the last 5 minute
